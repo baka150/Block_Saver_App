@@ -1,4 +1,4 @@
-#START BLOCK 1
+# START BLOCK 1
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, StringVar
@@ -7,8 +7,8 @@ import re
 import ttkthemes
 import json
 from utils import *  # Import helpers
-#END BLOCK 1
-#START BLOCK 2
+# END BLOCK 1
+# START BLOCK 2
 class BlockSaverApp:
     def __init__(self, root):
         self.root = root
@@ -62,12 +62,12 @@ class BlockSaverApp:
         self.canvas.itemconfig(self.output_label_recon, fill='white')
         self.update_placeholders_color()
         load_last_path([self.input_path_entry_split, self.input_path_entry_recon])
-#END BLOCK 2
-#START BLOCK 3
+# END BLOCK 2
+# START BLOCK 3
     def set_theme(self, theme_name):
         self.theme.theme_use(theme_name)
-#END BLOCK 3
-#START BLOCK 4
+# END BLOCK 3
+# START BLOCK 4
     def set_gradient(self, color1, color2):
         steps = 50  # Reduced for faster rendering
         for i in range(steps):
@@ -78,8 +78,8 @@ class BlockSaverApp:
             b = int(b1 + (i / steps) * (b2 - b1))
             height_per_step = 800 // steps
             self.canvas.create_rectangle(0, i * height_per_step, 900, (i + 1) * height_per_step, fill="#%02x%02x%02x" % (r, g, b), outline="")
-#END BLOCK 4
-#START BLOCK 5
+# END BLOCK 4
+# START BLOCK 5
     def setup_split_tab(self):
         self.split_frame.config(bg='#222222')
         self.paste_label = self.canvas.create_text(450, 60, text="Paste content here or load from file:", font=('Helvetica', 14, 'bold'), fill='white')
@@ -108,8 +108,8 @@ class BlockSaverApp:
         self.progress_split.pack(pady=10)
         self.status_split = tk.Label(self.split_frame, text="Ready for paste!", font=('Helvetica', 14), fg='white', bg='#222222', wraplength=850)
         self.status_split.pack(pady=10)
-#END BLOCK 5
-#START BLOCK 6
+# END BLOCK 5
+# START BLOCK 6
     def setup_recon_tab(self):
         self.recon_frame.config(bg='#222222')
         self.mode_label_recon = self.canvas.create_text(450, 350, text="Reconstruct Mode:", font=('Helvetica', 14, 'bold'), fill='white')
@@ -138,8 +138,8 @@ class BlockSaverApp:
         self.progress_recon.pack(pady=10)
         self.status_recon = tk.Label(self.recon_frame, text="Ready to reconstruct!", font=('Helvetica', 14), fg='white', bg='#222222', wraplength=850)
         self.status_recon.pack(pady=10)
-#END BLOCK 6
-#START BLOCK 7
+# END BLOCK 6
+# START BLOCK 7
     def setup_placeholders(self):
         self.prefix_placeholder = "e.g., Library_Block_"
         self.start_placeholder = "e.g., 1"
@@ -152,8 +152,8 @@ class BlockSaverApp:
         add_placeholder(self.start_number_recon, self.start_placeholder)
         add_placeholder(self.input_path_entry_recon, self.path_placeholder)
         add_placeholder(self.output_path_entry_recon, self.output_placeholder)
-#END BLOCK 7
-#START BLOCK 8
+# END BLOCK 7
+# START BLOCK 8
     def update_placeholders_color(self):
         placeholders = {
             self.naming_prefix_split: self.prefix_placeholder,
@@ -167,8 +167,8 @@ class BlockSaverApp:
         for entry, ph in placeholders.items():
             if entry.get() == ph:
                 entry.config(fg='grey')
-#END BLOCK 8
-#START BLOCK 9
+# END BLOCK 8
+# START BLOCK 9
     def split_blocks(self):
         pasted = self.paste_text.get("1.0", tk.END).strip()
         if not pasted:
@@ -290,8 +290,8 @@ class BlockSaverApp:
         self.input_path_entry_split.insert(0, self.path_placeholder)
         self.input_path_entry_split.config(fg='grey')
         self.paste_text.delete("1.0", tk.END)
-#END BLOCK 9
-#START BLOCK 10
+# END BLOCK 9
+# START BLOCK 10
     def reconstruct_blocks(self):
         mode = self.mode_var_recon.get()
         ext = '.json' if mode == 'JSON Code Segments' else '.js' if mode == 'JavaScript Code Segments' else '.txt'
@@ -356,4 +356,4 @@ class BlockSaverApp:
         self.output_path_entry_recon.delete(0, tk.END)
         self.output_path_entry_recon.insert(0, self.output_placeholder)
         self.output_path_entry_recon.config(fg='grey')
-#END BLOCK 10
+# END BLOCK 10

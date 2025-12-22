@@ -8,8 +8,8 @@ import shutil
 import glob
 import re
 from threading import Thread
-#END BLOCK 1
-#START BLOCK 2
+# END BLOCK 1
+# START BLOCK 2
 def load_last_path(entries):
     # Merged duplicates; takes list of entries to populate
     try:
@@ -22,13 +22,13 @@ def load_last_path(entries):
         default = os.path.expanduser("~/Desktop")
         for entry in entries:
             entry.insert(0, default)
-#END BLOCK 2
-#START BLOCK 3
+# END BLOCK 2
+# START BLOCK 3
 def save_last_path(path):
     with open('last_path.json', 'w') as f:
         json.dump({'path': path}, f)
-#END BLOCK 3
-#START BLOCK 4
+# END BLOCK 3
+# START BLOCK 4
 def add_placeholder(entry, placeholder):
     def on_focusin(event):
         if entry.get() == placeholder:
@@ -42,8 +42,8 @@ def add_placeholder(entry, placeholder):
     entry.bind("<FocusOut>", on_focusout)
     if not entry.get():
         on_focusout(None)
-#END BLOCK 4
-#START BLOCK 5
+# END BLOCK 4
+# START BLOCK 5
 # File explorer methods (moved as class methods would bloat app; could be a separate class if grows)
 def open_file_explorer(self, mode='select_dir', entry=None):
     self.current_mode = mode
@@ -97,8 +97,8 @@ def open_file_explorer(self, mode='select_dir', entry=None):
     self.ex_tree.bind('<<TreeviewOpen>>', lambda event: expand_ex_tree(self, event))
     self.ex_tree.bind('<ButtonRelease-1>', lambda event: show_files(self, event))
     self.explorer.after(50, lambda: initial_ex_setup(self, root_item))
-#END BLOCK 5
-#START BLOCK 6
+# END BLOCK 5
+# START BLOCK 6
 def initial_ex_setup(self, root_item):
     self.ex_tree.item(root_item, open=True)
     self.ex_tree.selection_set(root_item)
@@ -106,8 +106,8 @@ def initial_ex_setup(self, root_item):
     self.ex_tree.see(root_item)
     expand_ex_tree(self)
     show_files(self)
-#END BLOCK 6
-#START BLOCK 7
+# END BLOCK 6
+# START BLOCK 7
 def populate_ex_tree(self, parent, path):
     dirs = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
     for f in sorted(dirs):
@@ -116,8 +116,8 @@ def populate_ex_tree(self, parent, path):
         child = self.ex_tree.insert(parent, 'end', text=text)
         self.iid_to_path[child] = full
         self.ex_tree.insert(child, 'end', text='')  # dummy
-#END BLOCK 7
-#START BLOCK 8
+# END BLOCK 7
+# START BLOCK 8
 def expand_ex_tree(self, event=None):
     item = self.ex_tree.focus()
     if not item:
@@ -132,8 +132,8 @@ def expand_ex_tree(self, event=None):
     self.ex_tree.delete(*children)
     populate_ex_tree(self, item, path)
     self.ex_tree.see(item)
-#END BLOCK 8
-#START BLOCK 9
+# END BLOCK 8
+# START BLOCK 9
 def show_files(self, event=None):
     self.file_list.delete(0, tk.END)
     item = self.ex_tree.focus()
@@ -146,8 +146,8 @@ def show_files(self, event=None):
             text = f"📂 {f}" if os.path.isdir(full) else f"📄 {f}"
             self.file_list.insert(tk.END, text)
     self.current_path_label.config(text=path or '')
-#END BLOCK 9
-#START BLOCK 10
+# END BLOCK 9
+# START BLOCK 10
 def ex_create_folder(self):
     item = self.ex_tree.selection()
     if not item:
@@ -173,8 +173,8 @@ def ex_create_folder(self):
             self.ex_tree.see(child)
         except Exception as e:
             messagebox.showerror("Error", str(e))
-#END BLOCK 10
-#START BLOCK 11
+# END BLOCK 10
+# START BLOCK 11
 def ex_refresh(self):
     item = self.ex_tree.selection()
     if not item:
@@ -187,8 +187,8 @@ def ex_refresh(self):
     self.ex_tree.delete(*self.ex_tree.get_children(sel_item))
     populate_ex_tree(self, sel_item, path)
     show_files(self)
-#END BLOCK 11
-#START BLOCK 12
+# END BLOCK 11
+# START BLOCK 12
 def ex_delete(self):
     list_selection = self.file_list.curselection()
     if list_selection:
@@ -230,8 +230,8 @@ def ex_delete(self):
                 populate_ex_tree(self, parent, self.iid_to_path.get(parent))
             except Exception as e:
                 messagebox.showerror("Error", str(e))
-#END BLOCK 12
-#START BLOCK 13
+# END BLOCK 12
+# START BLOCK 13
 def ex_rename(self):
     list_selection = self.file_list.curselection()
     tree_selection = self.ex_tree.selection()
@@ -273,8 +273,8 @@ def ex_rename(self):
                 show_files(self)
         except Exception as e:
             messagebox.showerror("Error", str(e))
-#END BLOCK 13
-#START BLOCK 14
+# END BLOCK 13
+# START BLOCK 14
 def select_save_file(self, tree_selection, list_selection, window):
     if not tree_selection:
         messagebox.showwarning("Warning", "Select a directory!")
@@ -295,8 +295,8 @@ def select_save_file(self, tree_selection, list_selection, window):
         self.current_entry.insert(0, full_path)
     save_last_path(dir_path)
     window.destroy()
-#END BLOCK 14
-#START BLOCK 15
+# END BLOCK 14
+# START BLOCK 15
 def select_dir(self, selection, window):
     if not selection:
         messagebox.showwarning("Warning", "Select a directory!")
@@ -311,8 +311,8 @@ def select_dir(self, selection, window):
         self.current_entry.insert(0, path)
     save_last_path(path)
     window.destroy()
-#END BLOCK 15
-#START BLOCK 16
+# END BLOCK 15
+# START BLOCK 16
 def select_file(self, selection, window):
     if not selection:
         messagebox.showwarning("Warning", "Select a file!")
@@ -337,8 +337,8 @@ def select_file(self, selection, window):
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load file: {str(e)}")
             window.destroy()
-#END BLOCK 16
-#START BLOCK 17
+# END BLOCK 16
+# START BLOCK 17
 def on_file_double_click(self, event):
     selection = self.file_list.curselection()
     if not selection:
@@ -376,14 +376,14 @@ def on_file_double_click(self, event):
                 self.explorer.destroy()
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load file: {str(e)}")
-#END BLOCK 17
-#START BLOCK 18
+# END BLOCK 17
+# START BLOCK 18
 def start_split_thread(self):
     thread = Thread(target=self.split_blocks)
     thread.start()
-#END BLOCK 18
-#START BLOCK 19
+# END BLOCK 18
+# START BLOCK 19
 def start_recon_thread(self):
     thread = Thread(target=self.reconstruct_blocks)
     thread.start()
-#END BLOCK 19
+# END BLOCK 19
