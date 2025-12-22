@@ -1,0 +1,22 @@
+# Python-specific ignores
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Environment/IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# App-specific (e.g., user data we don't want to commit)
+last_path.json
+
+# Logs/temp files if we add them later
+*.log
+temp/
