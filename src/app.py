@@ -1,14 +1,19 @@
 # START BLOCK 1
+
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox, StringVar
+from tkinter import messagebox, StringVar
 from tkinter.ttk import Progressbar, Combobox, Notebook
 import re
 import ttkthemes
 import json
+import glob
 from utils import *  # Import helpers
+from tkfilebrowser import askopenfilename, askopendirname, asksaveasfilename  # For open source file browser
 # END BLOCK 1
 # START BLOCK 2
+
+
 class BlockSaverApp:
     def __init__(self, root):
         self.root = root
@@ -64,10 +69,12 @@ class BlockSaverApp:
         load_last_path([self.input_path_entry_split, self.input_path_entry_recon])
 # END BLOCK 2
 # START BLOCK 3
+
     def set_theme(self, theme_name):
         self.theme.theme_use(theme_name)
 # END BLOCK 3
 # START BLOCK 4
+
     def set_gradient(self, color1, color2):
         steps = 50  # Reduced for faster rendering
         for i in range(steps):
@@ -80,10 +87,11 @@ class BlockSaverApp:
             self.canvas.create_rectangle(0, i * height_per_step, 900, (i + 1) * height_per_step, fill="#%02x%02x%02x" % (r, g, b), outline="")
 # END BLOCK 4
 # START BLOCK 5
+
     def setup_split_tab(self):
         self.split_frame.config(bg='#222222')
         self.paste_label = self.canvas.create_text(450, 60, text="Paste content here or load from file:", font=('Helvetica', 14, 'bold'), fill='white')
-        self.browse_button_split = tk.Button(self.split_frame, text="Browse File", command=lambda: open_file_explorer(self, mode='load_file'), font=('Helvetica', 12), bg='darkblue', fg='white')
+        self.browse_button_split = tk.Button(self.split_frame, text="Browse File", command=self.load_from_file, font=('Helvetica', 12), bg='darkblue', fg='white')
         self.browse_button_split.pack(pady=10)
         self.paste_text = tk.Text(self.split_frame, height=18, width=90, font=('Courier', 10), bg='#2b2b2b', fg='white')
         self.paste_text.pack(pady=10)
@@ -100,9 +108,9 @@ class BlockSaverApp:
         self.input_label_split = self.canvas.create_text(450, 540, text="Output directory for blocks:", font=('Helvetica', 14, 'bold'), fill='white')
         self.input_path_entry_split = tk.Entry(self.split_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
         self.input_path_entry_split.pack(pady=10)
-        self.choose_input_split = tk.Button(self.split_frame, text="Choose Directory", command=lambda: open_file_explorer(self, mode='select_dir', entry=self.input_path_entry_split), font=('Helvetica', 12), bg='darkblue', fg='white')
+        self.choose_input_split = tk.Button(self.split_frame, text="Choose Directory", command=self.choose_output_dir_split, font=('Helvetica', 12), bg='darkblue', fg='white')
         self.choose_input_split.pack(pady=10)
-        self.process_button_split = tk.Button(self.split_frame, text="Split & Save Blocks", command=start_split_thread, font=('Helvetica', 14, 'bold'), bg='darkgreen', fg='white')
+        self.process_button_split = tk.Button(self.split_frame, text="Split & Save Blocks", command=self.start_split_thread, font=('Helvetica', 14, 'bold'), bg='darkgreen', fg='white')
         self.process_button_split.pack(pady=10)
         self.progress_split = Progressbar(self.split_frame, length=700, mode='determinate')
         self.progress_split.pack(pady=10)
@@ -110,6 +118,7 @@ class BlockSaverApp:
         self.status_split.pack(pady=10)
 # END BLOCK 5
 # START BLOCK 6
+
     def setup_recon_tab(self):
         self.recon_frame.config(bg='#222222')
         self.mode_label_recon = self.canvas.create_text(450, 350, text="Reconstruct Mode:", font=('Helvetica', 14, 'bold'), fill='white')
@@ -125,14 +134,14 @@ class BlockSaverApp:
         self.input_label_recon = self.canvas.create_text(450, 540, text="Input directory with blocks:", font=('Helvetica', 14, 'bold'), fill='white')
         self.input_path_entry_recon = tk.Entry(self.recon_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
         self.input_path_entry_recon.pack(pady=10)
-        self.choose_input_recon = tk.Button(self.recon_frame, text="Choose Directory", command=lambda: open_file_explorer(self, mode='select_dir', entry=self.input_path_entry_recon), font=('Helvetica', 12), bg='darkblue', fg='white')
+        self.choose_input_recon = tk.Button(self.recon_frame, text="Choose Directory", command=self.choose_input_dir_recon, font=('Helvetica', 12), bg='darkblue', fg='white')
         self.choose_input_recon.pack(pady=10)
         self.output_label_recon = self.canvas.create_text(450, 600, text="Output file for reconstructed content:", font=('Helvetica', 14, 'bold'), fill='white')
         self.output_path_entry_recon = tk.Entry(self.recon_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
         self.output_path_entry_recon.pack(pady=10)
-        self.choose_output_recon = tk.Button(self.recon_frame, text="Choose Save File", command=lambda: open_file_explorer(self, mode='save_file', entry=self.output_path_entry_recon), font=('Helvetica', 12), bg='darkblue', fg='white')
+        self.choose_output_recon = tk.Button(self.recon_frame, text="Choose Save File", command=self.choose_output_file_recon, font=('Helvetica', 12), bg='darkblue', fg='white')
         self.choose_output_recon.pack(pady=10)
-        self.process_button_recon = tk.Button(self.recon_frame, text="Reconstruct & Save", command=start_recon_thread, font=('Helvetica', 14, 'bold'), bg='darkgreen', fg='white')
+        self.process_button_recon = tk.Button(self.recon_frame, text="Reconstruct & Save", command=self.start_recon_thread, font=('Helvetica', 14, 'bold'), bg='darkgreen', fg='white')
         self.process_button_recon.pack(pady=10)
         self.progress_recon = Progressbar(self.recon_frame, length=700, mode='determinate')
         self.progress_recon.pack(pady=10)
@@ -140,6 +149,7 @@ class BlockSaverApp:
         self.status_recon.pack(pady=10)
 # END BLOCK 6
 # START BLOCK 7
+
     def setup_placeholders(self):
         self.prefix_placeholder = "e.g., Library_Block_"
         self.start_placeholder = "e.g., 1"
@@ -154,6 +164,7 @@ class BlockSaverApp:
         add_placeholder(self.output_path_entry_recon, self.output_placeholder)
 # END BLOCK 7
 # START BLOCK 8
+
     def update_placeholders_color(self):
         placeholders = {
             self.naming_prefix_split: self.prefix_placeholder,
@@ -357,3 +368,52 @@ class BlockSaverApp:
         self.output_path_entry_recon.insert(0, self.output_placeholder)
         self.output_path_entry_recon.config(fg='grey')
 # END BLOCK 10
+# START BLOCK 11
+
+    def load_from_file(self):
+        file_path = askopenfilename(title="Select file to load", filetypes=[("Text files", "*.txt"), ("JS files", "*.js"), ("JSON files", "*.json"), ("All files", "*.*")])
+        if file_path:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            self.paste_text.delete("1.0", tk.END)
+            self.paste_text.insert(tk.END, content)
+# END BLOCK 11
+# START BLOCK 12
+
+    def choose_output_dir_split(self):
+        dir_path = askopendirname(title="Select output directory")
+        if dir_path:
+            self.input_path_entry_split.delete(0, tk.END)
+            self.input_path_entry_split.insert(0, dir_path)
+            self.input_path_entry_split.config(fg='white')
+# END BLOCK 12
+# START BLOCK 13
+
+    def choose_input_dir_recon(self):
+        dir_path = askopendirname(title="Select input directory")
+        if dir_path:
+            self.input_path_entry_recon.delete(0, tk.END)
+            self.input_path_entry_recon.insert(0, dir_path)
+            self.input_path_entry_recon.config(fg='white')
+# END BLOCK 13
+# START BLOCK 14
+
+    def choose_output_file_recon(self):
+        file_path = asksaveasfilename(title="Select output file", defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("JS files", "*.js"), ("JSON files", "*.json"), ("All files", "*.*")])
+        if file_path:
+            self.output_path_entry_recon.delete(0, tk.END)
+            self.output_path_entry_recon.insert(0, file_path)
+            self.output_path_entry_recon.config(fg='white')
+# END BLOCK 14
+# START BLOCK 15
+
+    def start_split_thread(self):
+        thread = Thread(target=self.split_blocks)
+        thread.start()
+# END BLOCK 15
+# START BLOCK 16
+
+    def start_recon_thread(self):
+        thread = Thread(target=self.reconstruct_blocks)
+        thread.start()
+# END BLOCK 16
