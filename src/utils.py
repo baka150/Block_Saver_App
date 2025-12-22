@@ -110,7 +110,7 @@ def initial_ex_setup(self, root_item):
 # END BLOCK 6
 # START BLOCK 7
 def populate_ex_tree(self, parent, path):
-    dirs = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+    dirs = [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f)) and not f.startswith('.')]
     for f in sorted(dirs):
         full = os.path.join(path, f)
         text = f"📂 {f}"
@@ -142,7 +142,8 @@ def show_files(self, event=None):
         return
     path = self.iid_to_path.get(item)
     if path and os.path.isdir(path):
-        for f in sorted(os.listdir(path)):
+        files_and_dirs = [f for f in os.listdir(path) if not f.startswith('.')]
+        for f in sorted(files_and_dirs):
             full = os.path.join(path, f)
             text = f"📂 {f}" if os.path.isdir(full) else f"📄 {f}"
             self.file_list.insert(tk.END, text)
