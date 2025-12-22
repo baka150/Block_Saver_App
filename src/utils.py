@@ -8,6 +8,7 @@ import shutil
 import glob
 import re
 from threading import Thread
+import ttkthemes  # Added this to fix the NameError
 # END BLOCK 1
 # START BLOCK 2
 def load_last_path(entries):
