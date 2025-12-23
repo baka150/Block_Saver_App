@@ -33,7 +33,6 @@ class SplitTab:
             self.input_path_entry_split.config(fg='grey')
 # END BLOCK 2
 # START BLOCK 3
-
     def setup_widgets(self):
         # Scrollable canvas: To handle content overflow
         self.canvas_split = tk.Canvas(self.frame, bg='#222222')

@@ -32,7 +32,6 @@ class ReconTab:
             self.output_path_entry_recon.config(fg='grey')
 # END BLOCK 2
 # START BLOCK 3
-
     def setup_widgets(self):
         self.canvas_recon = tk.Canvas(self.frame, bg='#222222')
         scrollbar = tk.Scrollbar(self.frame, orient="vertical", command=self.canvas_recon.yview)
