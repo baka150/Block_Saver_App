@@ -1,6 +1,6 @@
 # START BLOCK 1
-
 import os
+import sys  # For platform-specific mouse wheel binding in scroll
 import tkinter as tk
 from tkinter import messagebox, StringVar
 from tkinter.ttk import Progressbar, Combobox, Notebook
@@ -8,9 +8,17 @@ import re
 import ttkthemes
 import json
 import glob
+from threading import Thread
 from utils import *  # Import helpers
-from tkfilebrowser import askopenfilename, askopendirname, asksaveasfilename  # For open source file browser
+from tkfilebrowser.filebrowser import FileBrowser  # Import base class for subclassing
 # END BLOCK 1
+# START BLOCK 1.5
+class CustomFileBrowser(FileBrowser):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Widen the 'name' column to prevent truncation of long file/folder names
+        self.right_tree.column("#0", width=500)  # '#0' is the tree column for file names
+# END BLOCK 1.5
 # START BLOCK 2
 
 
@@ -55,18 +63,17 @@ class BlockSaverApp:
         self.choose_output_recon.config(bg='darkblue', fg='white')
         self.process_button_recon.config(bg='darkgreen', fg='white')
         self.status_recon.config(fg='white', bg='#222222')
-        self.canvas.itemconfig(self.paste_label, fill='white')
-        self.canvas.itemconfig(self.mode_label_split, fill='white')
-        self.canvas.itemconfig(self.prefix_label_split, fill='white')
-        self.canvas.itemconfig(self.start_label_split, fill='white')
-        self.canvas.itemconfig(self.input_label_split, fill='white')
-        self.canvas.itemconfig(self.mode_label_recon, fill='white')
-        self.canvas.itemconfig(self.prefix_label_recon, fill='white')
-        self.canvas.itemconfig(self.start_label_recon, fill='white')
-        self.canvas.itemconfig(self.input_label_recon, fill='white')
-        self.canvas.itemconfig(self.output_label_recon, fill='white')
         self.update_placeholders_color()
         load_last_path([self.input_path_entry_split, self.input_path_entry_recon])
+
+        # Center the window on the screen
+        self.root.update_idletasks()  # Ensures geometry is updated
+        self.root.update()  # Extra update for better positioning on some systems like Linux
+        width = 900
+        height = 800
+        x = (self.root.winfo_screenwidth() - width) // 2
+        y = (self.root.winfo_screenheight() - height) // 2
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
 # END BLOCK 2
 # START BLOCK 3
 
@@ -76,7 +83,7 @@ class BlockSaverApp:
 # START BLOCK 4
 
     def set_gradient(self, color1, color2):
-        steps = 50  # Reduced for faster rendering
+        steps = 10  # Reduced for faster rendering
         for i in range(steps):
             r1, g1, b1 = int(color1[1:3], 16), int(color1[3:5], 16), int(color1[5:7], 16)
             r2, g2, b2 = int(color2[1:3], 16), int(color2[3:5], 16), int(color2[5:7], 16)
@@ -87,66 +94,138 @@ class BlockSaverApp:
             self.canvas.create_rectangle(0, i * height_per_step, 900, (i + 1) * height_per_step, fill="#%02x%02x%02x" % (r, g, b), outline="")
 # END BLOCK 4
 # START BLOCK 5
-
     def setup_split_tab(self):
         self.split_frame.config(bg='#222222')
-        self.paste_label = self.canvas.create_text(450, 60, text="Paste content here or load from file:", font=('Helvetica', 14, 'bold'), fill='white')
-        self.browse_button_split = tk.Button(self.split_frame, text="Browse File", command=self.load_from_file, font=('Helvetica', 12), bg='darkblue', fg='white')
-        self.browse_button_split.pack(pady=10)
-        self.paste_text = tk.Text(self.split_frame, height=18, width=90, font=('Courier', 10), bg='#2b2b2b', fg='white')
-        self.paste_text.pack(pady=10)
-        self.mode_label_split = self.canvas.create_text(450, 350, text="Split Mode:", font=('Helvetica', 14, 'bold'), fill='white')
+
+        # Scrollable canvas for tab content to prevent cutoff
+        self.canvas_split = tk.Canvas(self.split_frame, bg='#222222')
+        scrollbar = tk.Scrollbar(self.split_frame, orient="vertical", command=self.canvas_split.yview)
+        self.scrollable_frame_split = tk.Frame(self.canvas_split, bg='#222222')
+
+        self.scrollable_frame_split.bind(
+            "<Configure>",
+            lambda e: self.canvas_split.configure(
+                scrollregion=self.canvas_split.bbox("all")
+            )
+        )
+
+        self.canvas_split.create_window((0, 0), window=self.scrollable_frame_split, anchor="nw")
+        self.canvas_split.configure(yscrollcommand=scrollbar.set)
+
+        # Get scrollbar's requested width and set padding to match for perfect balance
+        padding_width = scrollbar.winfo_reqwidth()
+        padding_frame = tk.Frame(self.split_frame, width=padding_width, bg='#222222')
+        padding_frame.pack(side="left", fill="y")
+
+        self.canvas_split.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Bind mouse wheel for scrolling (cross-platform)
+        if sys.platform == "win32" or sys.platform == "darwin":
+            self.canvas_split.bind_all("<MouseWheel>", lambda event: self.canvas_split.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+        else:  # Linux
+            self.canvas_split.bind_all("<Button-4>", lambda event: self.canvas_split.yview_scroll(-1, "units"))
+            self.canvas_split.bind_all("<Button-5>", lambda event: self.canvas_split.yview_scroll(1, "units"))
+
+        # Pack widgets into scrollable_frame_split with anchor='center' for horizontal centering
+        self.paste_label = tk.Label(self.scrollable_frame_split, text="Paste content here or load from file:", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.paste_label.pack(pady=5, anchor='center')
+        self.browse_button_split = tk.Button(self.scrollable_frame_split, text="Browse File", command=self.load_from_file, font=('Helvetica', 12), bg='darkblue', fg='white')
+        self.browse_button_split.pack(pady=10, anchor='center')
+        self.paste_text = tk.Text(self.scrollable_frame_split, height=18, width=90, font=('Courier', 10), bg='#2b2b2b', fg='white')
+        self.paste_text.pack(pady=10, anchor='center')
+        self.mode_label_split = tk.Label(self.scrollable_frame_split, text="Split Mode:", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.mode_label_split.pack(pady=5, anchor='center')
         self.mode_var_split = tk.StringVar(value='Raw Text Chunks')
-        self.mode_menu_split = Combobox(self.split_frame, textvariable=self.mode_var_split, values=['Raw Text Chunks', 'JavaScript Code Segments', 'JSON Code Segments'], state='readonly', font=('Helvetica', 12))
-        self.mode_menu_split.pack(pady=10)
-        self.prefix_label_split = self.canvas.create_text(450, 420, text="Naming prefix (e.g., Library_Block_):", font=('Helvetica', 14, 'bold'), fill='white')
-        self.naming_prefix_split = tk.Entry(self.split_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
-        self.naming_prefix_split.pack(pady=10)
-        self.start_label_split = self.canvas.create_text(450, 480, text="Starting number (e.g., 1):", font=('Helvetica', 14, 'bold'), fill='white')
-        self.start_number_split = tk.Entry(self.split_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
-        self.start_number_split.pack(pady=10)
-        self.input_label_split = self.canvas.create_text(450, 540, text="Output directory for blocks:", font=('Helvetica', 14, 'bold'), fill='white')
-        self.input_path_entry_split = tk.Entry(self.split_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
-        self.input_path_entry_split.pack(pady=10)
-        self.choose_input_split = tk.Button(self.split_frame, text="Choose Directory", command=self.choose_output_dir_split, font=('Helvetica', 12), bg='darkblue', fg='white')
-        self.choose_input_split.pack(pady=10)
-        self.process_button_split = tk.Button(self.split_frame, text="Split & Save Blocks", command=self.start_split_thread, font=('Helvetica', 14, 'bold'), bg='darkgreen', fg='white')
-        self.process_button_split.pack(pady=10)
-        self.progress_split = Progressbar(self.split_frame, length=700, mode='determinate')
-        self.progress_split.pack(pady=10)
-        self.status_split = tk.Label(self.split_frame, text="Ready for paste!", font=('Helvetica', 14), fg='white', bg='#222222', wraplength=850)
-        self.status_split.pack(pady=10)
+        self.mode_menu_split = Combobox(self.scrollable_frame_split, textvariable=self.mode_var_split, values=['Raw Text Chunks', 'JavaScript Code Segments', 'JSON Code Segments'], state='readonly', font=('Helvetica', 12))
+        self.mode_menu_split.pack(pady=10, anchor='center')
+        self.prefix_label_split = tk.Label(self.scrollable_frame_split, text="Naming prefix (e.g., Library_Block_):", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.prefix_label_split.pack(pady=5, anchor='center')
+        self.naming_prefix_split = tk.Entry(self.scrollable_frame_split, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
+        self.naming_prefix_split.pack(pady=10, anchor='center')
+        self.start_label_split = tk.Label(self.scrollable_frame_split, text="Starting number (e.g., 1):", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.start_label_split.pack(pady=5, anchor='center')
+        self.start_number_split = tk.Entry(self.scrollable_frame_split, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
+        self.start_number_split.pack(pady=10, anchor='center')
+        self.input_label_split = tk.Label(self.scrollable_frame_split, text="Output directory for blocks:", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.input_label_split.pack(pady=5, anchor='center')
+        self.input_path_entry_split = tk.Entry(self.scrollable_frame_split, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
+        self.input_path_entry_split.pack(pady=10, anchor='center')
+        self.choose_input_split = tk.Button(self.scrollable_frame_split, text="Choose Directory", command=self.choose_output_dir_split, font=('Helvetica', 12), bg='darkblue', fg='white')
+        self.choose_input_split.pack(pady=10, anchor='center')
+        self.process_button_split = tk.Button(self.scrollable_frame_split, text="Split & Save Blocks", command=self.start_split_thread, font=('Helvetica', 14, 'bold'), bg='darkgreen', fg='white')
+        self.process_button_split.pack(pady=10, anchor='center')
+        self.progress_split = Progressbar(self.scrollable_frame_split, length=700, mode='determinate')
+        self.progress_split.pack(pady=10, anchor='center')
+        self.status_split = tk.Label(self.scrollable_frame_split, text="Ready for paste!", font=('Helvetica', 14), fg='white', bg='#222222', wraplength=850)
+        self.status_split.pack(pady=10, anchor='center')
 # END BLOCK 5
 # START BLOCK 6
-
     def setup_recon_tab(self):
         self.recon_frame.config(bg='#222222')
-        self.mode_label_recon = self.canvas.create_text(450, 350, text="Reconstruct Mode:", font=('Helvetica', 14, 'bold'), fill='white')
+
+        # Scrollable canvas for tab content to prevent cutoff
+        self.canvas_recon = tk.Canvas(self.recon_frame, bg='#222222')
+        scrollbar = tk.Scrollbar(self.recon_frame, orient="vertical", command=self.canvas_recon.yview)
+        self.scrollable_frame_recon = tk.Frame(self.canvas_recon, bg='#222222')
+
+        self.scrollable_frame_recon.bind(
+            "<Configure>",
+            lambda e: self.canvas_recon.configure(
+                scrollregion=self.canvas_recon.bbox("all")
+            )
+        )
+
+        self.canvas_recon.create_window((0, 0), window=self.scrollable_frame_recon, anchor="nw")
+        self.canvas_recon.configure(yscrollcommand=scrollbar.set)
+
+        # Get scrollbar's requested width and set padding to match for perfect balance
+        padding_width = scrollbar.winfo_reqwidth()
+        padding_frame = tk.Frame(self.recon_frame, width=padding_width, bg='#222222')
+        padding_frame.pack(side="left", fill="y")
+
+        self.canvas_recon.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Bind mouse wheel for scrolling (cross-platform)
+        if sys.platform == "win32" or sys.platform == "darwin":
+            self.canvas_recon.bind_all("<MouseWheel>", lambda event: self.canvas_recon.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+        else:  # Linux
+            self.canvas_recon.bind_all("<Button-4>", lambda event: self.canvas_recon.yview_scroll(-1, "units"))
+            self.canvas_recon.bind_all("<Button-5>", lambda event: self.canvas_recon.yview_scroll(1, "units"))
+
+        # Pack widgets into scrollable_frame_recon with anchor='center' for horizontal centering
+        self.mode_label_recon = tk.Label(self.scrollable_frame_recon, text="Reconstruct Mode:", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.mode_label_recon.pack(pady=5, anchor='center')
         self.mode_var_recon = tk.StringVar(value='Raw Text Chunks')
-        self.mode_menu_recon = Combobox(self.recon_frame, textvariable=self.mode_var_recon, values=['Raw Text Chunks', 'JavaScript Code Segments', 'JSON Code Segments'], state='readonly', font=('Helvetica', 12))
-        self.mode_menu_recon.pack(pady=10)
-        self.prefix_label_recon = self.canvas.create_text(450, 420, text="Naming prefix to match (e.g., Library_Block_):", font=('Helvetica', 14, 'bold'), fill='white')
-        self.naming_prefix_recon = tk.Entry(self.recon_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
-        self.naming_prefix_recon.pack(pady=10)
-        self.start_label_recon = self.canvas.create_text(450, 480, text="Starting number to search from (e.g., 1):", font=('Helvetica', 14, 'bold'), fill='white')
-        self.start_number_recon = tk.Entry(self.recon_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
-        self.start_number_recon.pack(pady=10)
-        self.input_label_recon = self.canvas.create_text(450, 540, text="Input directory with blocks:", font=('Helvetica', 14, 'bold'), fill='white')
-        self.input_path_entry_recon = tk.Entry(self.recon_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
-        self.input_path_entry_recon.pack(pady=10)
-        self.choose_input_recon = tk.Button(self.recon_frame, text="Choose Directory", command=self.choose_input_dir_recon, font=('Helvetica', 12), bg='darkblue', fg='white')
-        self.choose_input_recon.pack(pady=10)
-        self.output_label_recon = self.canvas.create_text(450, 600, text="Output file for reconstructed content:", font=('Helvetica', 14, 'bold'), fill='white')
-        self.output_path_entry_recon = tk.Entry(self.recon_frame, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
-        self.output_path_entry_recon.pack(pady=10)
-        self.choose_output_recon = tk.Button(self.recon_frame, text="Choose Save File", command=self.choose_output_file_recon, font=('Helvetica', 12), bg='darkblue', fg='white')
-        self.choose_output_recon.pack(pady=10)
-        self.process_button_recon = tk.Button(self.recon_frame, text="Reconstruct & Save", command=self.start_recon_thread, font=('Helvetica', 14, 'bold'), bg='darkgreen', fg='white')
-        self.process_button_recon.pack(pady=10)
-        self.progress_recon = Progressbar(self.recon_frame, length=700, mode='determinate')
-        self.progress_recon.pack(pady=10)
-        self.status_recon = tk.Label(self.recon_frame, text="Ready to reconstruct!", font=('Helvetica', 14), fg='white', bg='#222222', wraplength=850)
-        self.status_recon.pack(pady=10)
+        self.mode_menu_recon = Combobox(self.scrollable_frame_recon, textvariable=self.mode_var_recon, values=['Raw Text Chunks', 'JavaScript Code Segments', 'JSON Code Segments'], state='readonly', font=('Helvetica', 12))
+        self.mode_menu_recon.pack(pady=10, anchor='center')
+        self.prefix_label_recon = tk.Label(self.scrollable_frame_recon, text="Naming prefix to match (e.g., Library_Block_):", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.prefix_label_recon.pack(pady=5, anchor='center')
+        self.naming_prefix_recon = tk.Entry(self.scrollable_frame_recon, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
+        self.naming_prefix_recon.pack(pady=10, anchor='center')
+        self.start_label_recon = tk.Label(self.scrollable_frame_recon, text="Starting number to search from (e.g., 1):", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.start_label_recon.pack(pady=5, anchor='center')
+        self.start_number_recon = tk.Entry(self.scrollable_frame_recon, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
+        self.start_number_recon.pack(pady=10, anchor='center')
+        self.input_label_recon = tk.Label(self.scrollable_frame_recon, text="Input directory with blocks:", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.input_label_recon.pack(pady=5, anchor='center')
+        self.input_path_entry_recon = tk.Entry(self.scrollable_frame_recon, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
+        self.input_path_entry_recon.pack(pady=10, anchor='center')
+        self.choose_input_recon = tk.Button(self.scrollable_frame_recon, text="Choose Directory", command=self.choose_input_dir_recon, font=('Helvetica', 12), bg='darkblue', fg='white')
+        self.choose_input_recon.pack(pady=10, anchor='center')
+        self.output_label_recon = tk.Label(self.scrollable_frame_recon, text="Output file for reconstructed content:", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
+        self.output_label_recon.pack(pady=5, anchor='center')
+        self.output_path_entry_recon = tk.Entry(self.scrollable_frame_recon, width=60, font=('Helvetica', 12), bg='#2b2b2b', fg='white')
+        self.output_path_entry_recon.pack(pady=10, anchor='center')
+        self.choose_output_recon = tk.Button(self.scrollable_frame_recon, text="Choose Save File", command=self.choose_output_file_recon, font=('Helvetica', 12), bg='darkblue', fg='white')
+        self.choose_output_recon.pack(pady=10, anchor='center')
+        self.process_button_recon = tk.Button(self.scrollable_frame_recon, text="Reconstruct & Save", command=self.start_recon_thread, font=('Helvetica', 14, 'bold'), bg='darkgreen', fg='white')
+        self.process_button_recon.pack(pady=10, anchor='center')
+        self.progress_recon = Progressbar(self.scrollable_frame_recon, length=700, mode='determinate')
+        self.progress_recon.pack(pady=10, anchor='center')
+        self.status_recon = tk.Label(self.scrollable_frame_recon, text="Ready to reconstruct!", font=('Helvetica', 14), fg='white', bg='#222222', wraplength=850)
+        self.status_recon.pack(pady=10, anchor='center')
 # END BLOCK 6
 # START BLOCK 7
 
@@ -369,9 +448,8 @@ class BlockSaverApp:
         self.output_path_entry_recon.config(fg='grey')
 # END BLOCK 10
 # START BLOCK 11
-
     def load_from_file(self):
-        file_path = askopenfilename(title="Select file to load", filetypes=[("Text files", "*.txt"), ("JS files", "*.js"), ("JSON files", "*.json"), ("All files", "*.*")])
+        file_path = self.custom_askopenfilename(title="Select file to load", filetypes=[("Text files", "*.txt"), ("JS files", "*.js"), ("JSON files", "*.json"), ("All files", "*.*")])
         if file_path:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -379,27 +457,24 @@ class BlockSaverApp:
             self.paste_text.insert(tk.END, content)
 # END BLOCK 11
 # START BLOCK 12
-
     def choose_output_dir_split(self):
-        dir_path = askopendirname(title="Select output directory")
+        dir_path = self.custom_askopendirname(title="Select output directory")
         if dir_path:
             self.input_path_entry_split.delete(0, tk.END)
             self.input_path_entry_split.insert(0, dir_path)
             self.input_path_entry_split.config(fg='white')
 # END BLOCK 12
 # START BLOCK 13
-
     def choose_input_dir_recon(self):
-        dir_path = askopendirname(title="Select input directory")
+        dir_path = self.custom_askopendirname(title="Select input directory")
         if dir_path:
             self.input_path_entry_recon.delete(0, tk.END)
             self.input_path_entry_recon.insert(0, dir_path)
             self.input_path_entry_recon.config(fg='white')
 # END BLOCK 13
 # START BLOCK 14
-
     def choose_output_file_recon(self):
-        file_path = asksaveasfilename(title="Select output file", defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("JS files", "*.js"), ("JSON files", "*.json"), ("All files", "*.*")])
+        file_path = self.custom_asksaveasfilename(title="Select output file", defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("JS files", "*.js"), ("JSON files", "*.json"), ("All files", "*.*")])
         if file_path:
             self.output_path_entry_recon.delete(0, tk.END)
             self.output_path_entry_recon.insert(0, file_path)
@@ -417,3 +492,49 @@ class BlockSaverApp:
         thread = Thread(target=self.reconstruct_blocks)
         thread.start()
 # END BLOCK 16
+# START BLOCK 16.5
+    def custom_askopenfilename(self, **options):
+        dia = CustomFileBrowser(self.root, mode="openfile", multiple_selection=False, **options)
+        dia.geometry("900x600")  # Wider and taller to prevent text cutoff in columns
+        dia.update_idletasks()  # Update to get accurate size
+        w = 900
+        h = 600
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2 - w // 2)
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2 - h // 2)
+        dia.geometry(f"{w}x{h}+{x}+{y}")
+        self.root.grab_set()
+        self.root.wait_window(dia)
+        res = dia.get_result()
+        self.root.focus_set()
+        return res
+
+    def custom_askopendirname(self, **options):
+        dia = CustomFileBrowser(self.root, mode="opendir", multiple_selection=False, **options)
+        dia.geometry("900x600")  # Wider and taller to prevent text cutoff in columns
+        dia.update_idletasks()  # Update to get accurate size
+        w = 900
+        h = 600
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2 - w // 2)
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2 - h // 2)
+        dia.geometry(f"{w}x{h}+{x}+{y}")
+        self.root.grab_set()
+        self.root.wait_window(dia)
+        res = dia.get_result()
+        self.root.focus_set()
+        return res
+
+    def custom_asksaveasfilename(self, **options):
+        dia = CustomFileBrowser(self.root, mode="savefile", multiple_selection=False, **options)
+        dia.geometry("900x600")  # Wider and taller to prevent text cutoff in columns
+        dia.update_idletasks()  # Update to get accurate size
+        w = 900
+        h = 600
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2 - w // 2)
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2 - h // 2)
+        dia.geometry(f"{w}x{h}+{x}+{y}")
+        self.root.grab_set()
+        self.root.wait_window(dia)
+        res = dia.get_result()
+        self.root.focus_set()
+        return res
+# END BLOCK 16.5
