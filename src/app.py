@@ -19,7 +19,7 @@ class BlockSaverApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Block Saver App")
-        self.resize(1000, 800)  # Initial size (teaching: Qt handles resizing; setMinimumSize if needed)
+        self.resize(750, 800)  # Teaching: A bit thinner for that refined, compact look; balances usability without squeeze.
         self.center()  # Center window (teaching: this method works reliably cross-platform, no glitches)
         self.set_gradient_background()  # Gradient setup
         self.apply_dark_theme()  # Dark colors
@@ -72,7 +72,8 @@ class BlockSaverApp(QMainWindow):
         self.setStyleSheet("""
             QMainWindow { background-color: #222222; }
             QLineEdit { background-color: #2b2b2b; color: white; border: 1px solid #444444; }
-            QPushButton { background-color: darkblue; color: white; border: none; padding: 5px; }
+            QPushButton { background-color: darkblue; color: white; border: 1px solid #555555; border-radius: 5px; padding: 5px; }
+            QPushButton:hover { background-color: #00008b; }  # Teaching: Hover effect for better "buttony" feel—darkens on mouse over.
             QTextEdit { background-color: #2b2b2b; color: white; border: 1px solid #444444; }
             QComboBox { background-color: #2b2b2b; color: white; border: 1px solid #444444; }
             QProgressBar { background-color: #2b2b2b; color: white; border: 1px solid #444444; text-align: center; }

@@ -18,6 +18,7 @@ class MergeWorker(QObject):
         content = self.tab.paste_text.toPlainText().strip()
         mode = self.tab.mode_menu_merge.currentText()
         output_dir = self.tab.output_path_entry_merge.text().strip()
+        custom_name = self.tab.output_filename_merge.text().strip()  # Teaching: Grab custom filename.
 
         if not content:
             self.error.emit("No content to merge.")
@@ -42,14 +43,33 @@ class MergeWorker(QObject):
         total = len(matches)
         self.progress.emit(100)  # Teaching: Simple process, so instant 100%; expand if more steps.
 
-        # Output file (teaching: Default to merged_python.py; add modes later).
-        base_name = 'merged_python'
-        ext = '.py'
-        file_name = f"{base_name}{ext}"
+        # Output file (teaching: Mode-specific base_name and ext).
+        if mode == 'Python Code':
+            default_base = 'merged_python'
+            ext = '.py'
+        elif mode == 'JavaScript Code':
+            default_base = 'merged_javascript'
+            ext = '.js'
+        elif mode == 'JSON Code':
+            default_base = 'merged_json'
+            ext = '.json'
+        else:
+            default_base = 'merged'
+            ext = '.txt'  # Fallback, but but shouldn't hit.
+        # Teaching: Use custom if provided, else default; append ext if missing.
+        if custom_name:
+            base_name = custom_name
+            if not base_name.endswith(ext):
+                base_name += ext
+        else:
+            base_name = default_base + ext
+        file_name = base_name
         path = os.path.join(output_dir, file_name)
         copy_num = 1
         while os.path.exists(path):
-            file_name = f"{base_name}_copy{copy_num}{ext}"
+            # Split base from ext for copy append.
+            name_part, ext_part = os.path.splitext(base_name)
+            file_name = f"{name_part}_copy{copy_num}{ext_part}"
             path = os.path.join(output_dir, file_name)
             copy_num += 1
         with open(path, 'w', encoding='utf-8') as f:

@@ -28,10 +28,12 @@ class MergeTab:
         self.layout.setContentsMargins(20, 20, 20, 20)
         # Placeholders
         self.output_placeholder = "Select or enter directory"
+        self.filename_placeholder = "e.g., merged_library"  # Teaching: No ext needed; we'll append based on mode.
         # Setup widgets
         self.setup_widgets()
         # Add placeholders
         add_placeholder(self.output_path_entry_merge, self.output_placeholder)
+        add_placeholder(self.output_filename_merge, self.filename_placeholder)
         # Teaching: Connect for auto-detect if we add modes later; skip for now.
 
 # END BLOCK 2
@@ -55,7 +57,7 @@ class MergeTab:
         self.mode_label_merge.setFont(QFont('Helvetica', 14, QFont.Weight.Bold))
         self.layout.addWidget(self.mode_label_merge)
         self.mode_menu_merge = QComboBox()
-        self.mode_menu_merge.addItems(['Python Code'])  # Teaching: Expand later if needed (e.g., JS).
+        self.mode_menu_merge.addItems(['Python Code', 'JavaScript Code', 'JSON Code'])  # Teaching: Added JS and JSON for versatility.
         self.mode_menu_merge.setCurrentText('Python Code')
         self.layout.addWidget(self.mode_menu_merge)
         # Output dir
@@ -67,6 +69,12 @@ class MergeTab:
         self.choose_output_merge = QPushButton("Choose Directory")
         self.choose_output_merge.clicked.connect(self.choose_output_dir_merge)
         self.layout.addWidget(self.choose_output_merge)
+        # Output filename (teaching: New field for custom name, like in recon)
+        self.filename_label_merge = QLabel("Output filename (without extension):")
+        self.filename_label_merge.setFont(QFont('Helvetica', 14, QFont.Weight.Bold))
+        self.layout.addWidget(self.filename_label_merge)
+        self.output_filename_merge = QLineEdit()
+        self.layout.addWidget(self.output_filename_merge)
         # Process button
         self.process_button_merge = QPushButton("Merge Blocks")
         self.process_button_merge.clicked.connect(self.start_merge_thread)
