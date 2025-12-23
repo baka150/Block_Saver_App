@@ -12,14 +12,14 @@ from threading import Thread
 from utils import *  # Import helpers
 from tkfilebrowser.filebrowser import FileBrowser  # Import base class for subclassing
 # END BLOCK 1
-# START BLOCK 1.5
+# START BLOCK 2
 class CustomFileBrowser(FileBrowser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Widen the 'name' column to prevent truncation of long file/folder names
         self.right_tree.column("#0", width=500)  # '#0' is the tree column for file names
-# END BLOCK 1.5
-# START BLOCK 2
+# END BLOCK 2
+# START BLOCK 3
 
 
 class BlockSaverApp:
@@ -74,13 +74,13 @@ class BlockSaverApp:
         x = (self.root.winfo_screenwidth() - width) // 2
         y = (self.root.winfo_screenheight() - height) // 2
         self.root.geometry(f"{width}x{height}+{x}+{y}")
-# END BLOCK 2
-# START BLOCK 3
+# END BLOCK 3
+# START BLOCK 4
 
     def set_theme(self, theme_name):
         self.theme.theme_use(theme_name)
-# END BLOCK 3
-# START BLOCK 4
+# END BLOCK 4
+# START BLOCK 5
 
     def set_gradient(self, color1, color2):
         steps = 10  # Reduced for faster rendering
@@ -92,8 +92,8 @@ class BlockSaverApp:
             b = int(b1 + (i / steps) * (b2 - b1))
             height_per_step = 800 // steps
             self.canvas.create_rectangle(0, i * height_per_step, 900, (i + 1) * height_per_step, fill="#%02x%02x%02x" % (r, g, b), outline="")
-# END BLOCK 4
-# START BLOCK 5
+# END BLOCK 5
+# START BLOCK 6
     def setup_split_tab(self):
         self.split_frame.config(bg='#222222')
 
@@ -112,20 +112,36 @@ class BlockSaverApp:
         self.canvas_split.create_window((0, 0), window=self.scrollable_frame_split, anchor="nw")
         self.canvas_split.configure(yscrollcommand=scrollbar.set)
 
-        # Get scrollbar's requested width and set padding to match for perfect balance
-        padding_width = scrollbar.winfo_reqwidth()
+        # Pack scrollbar first, update to get actual width, then add padding for balance
+        scrollbar.pack(side="right", fill="y")
+        self.split_frame.update_idletasks()  # Force update to realize actual sizes
+        padding_width = scrollbar.winfo_width()  # Use actual rendered width
+        if padding_width < 10:  # Fallback if measurement is weird (e.g., not fully rendered yet)
+            padding_width = 20  # Common scrollbar width on Linux; adjust based on your print output if needed
+        print(f"Split tab scrollbar width: {padding_width}")  # Debug: Check terminal for this value
         padding_frame = tk.Frame(self.split_frame, width=padding_width, bg='#222222')
         padding_frame.pack(side="left", fill="y")
 
         self.canvas_split.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
 
-        # Bind mouse wheel for scrolling (cross-platform)
+        # Bind mouse wheel for scrolling (cross-platform) - bind to root for reliability, plus extras
+        def handle_wheel_split(event):
+            print("Wheel event on split tab!")  # Debug: Should print when wheel used anywhere
+            direction = -1 if event.num == 4 or event.delta > 0 else 1
+            self.canvas_split.yview_scroll(direction, "units")
+            return "break"  # Prevent further propagation if needed
+
         if sys.platform == "win32" or sys.platform == "darwin":
-            self.canvas_split.bind_all("<MouseWheel>", lambda event: self.canvas_split.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+            self.root.bind_all("<MouseWheel>", lambda event: self.canvas_split.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+            self.canvas_split.bind("<MouseWheel>", lambda event: self.canvas_split.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+            self.scrollable_frame_split.bind("<MouseWheel>", lambda event: self.canvas_split.yview_scroll(int(-1 * (event.delta / 120)), "units"))
         else:  # Linux
-            self.canvas_split.bind_all("<Button-4>", lambda event: self.canvas_split.yview_scroll(-1, "units"))
-            self.canvas_split.bind_all("<Button-5>", lambda event: self.canvas_split.yview_scroll(1, "units"))
+            self.root.bind_all("<Button-4>", handle_wheel_split)
+            self.root.bind_all("<Button-5>", handle_wheel_split)
+            self.canvas_split.bind("<Button-4>", handle_wheel_split)
+            self.canvas_split.bind("<Button-5>", handle_wheel_split)
+            self.scrollable_frame_split.bind("<Button-4>", handle_wheel_split)
+            self.scrollable_frame_split.bind("<Button-5>", handle_wheel_split)
 
         # Pack widgets into scrollable_frame_split with anchor='center' for horizontal centering
         self.paste_label = tk.Label(self.scrollable_frame_split, text="Paste content here or load from file:", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
@@ -159,8 +175,8 @@ class BlockSaverApp:
         self.progress_split.pack(pady=10, anchor='center')
         self.status_split = tk.Label(self.scrollable_frame_split, text="Ready for paste!", font=('Helvetica', 14), fg='white', bg='#222222', wraplength=850)
         self.status_split.pack(pady=10, anchor='center')
-# END BLOCK 5
-# START BLOCK 6
+# END BLOCK 6
+# START BLOCK 7
     def setup_recon_tab(self):
         self.recon_frame.config(bg='#222222')
 
@@ -179,20 +195,36 @@ class BlockSaverApp:
         self.canvas_recon.create_window((0, 0), window=self.scrollable_frame_recon, anchor="nw")
         self.canvas_recon.configure(yscrollcommand=scrollbar.set)
 
-        # Get scrollbar's requested width and set padding to match for perfect balance
-        padding_width = scrollbar.winfo_reqwidth()
+        # Pack scrollbar first, update to get actual width, then add padding for balance
+        scrollbar.pack(side="right", fill="y")
+        self.recon_frame.update_idletasks()  # Force update to realize actual sizes
+        padding_width = scrollbar.winfo_width()  # Use actual rendered width
+        if padding_width < 10:  # Fallback if measurement is weird (e.g., not fully rendered yet)
+            padding_width = 20  # Common scrollbar width on Linux; adjust based on your print output if needed
+        print(f"Recon tab scrollbar width: {padding_width}")  # Debug: Check terminal for this value
         padding_frame = tk.Frame(self.recon_frame, width=padding_width, bg='#222222')
         padding_frame.pack(side="left", fill="y")
 
         self.canvas_recon.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
 
-        # Bind mouse wheel for scrolling (cross-platform)
+        # Bind mouse wheel for scrolling (cross-platform) - bind to root for reliability, plus extras
+        def handle_wheel_recon(event):
+            print("Wheel event on recon tab!")  # Debug: Should print when wheel used anywhere
+            direction = -1 if event.num == 4 or event.delta > 0 else 1
+            self.canvas_recon.yview_scroll(direction, "units")
+            return "break"  # Prevent further propagation if needed
+
         if sys.platform == "win32" or sys.platform == "darwin":
-            self.canvas_recon.bind_all("<MouseWheel>", lambda event: self.canvas_recon.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+            self.root.bind_all("<MouseWheel>", lambda event: self.canvas_recon.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+            self.canvas_recon.bind("<MouseWheel>", lambda event: self.canvas_recon.yview_scroll(int(-1 * (event.delta / 120)), "units"))
+            self.scrollable_frame_recon.bind("<MouseWheel>", lambda event: self.canvas_recon.yview_scroll(int(-1 * (event.delta / 120)), "units"))
         else:  # Linux
-            self.canvas_recon.bind_all("<Button-4>", lambda event: self.canvas_recon.yview_scroll(-1, "units"))
-            self.canvas_recon.bind_all("<Button-5>", lambda event: self.canvas_recon.yview_scroll(1, "units"))
+            self.root.bind_all("<Button-4>", handle_wheel_recon)
+            self.root.bind_all("<Button-5>", handle_wheel_recon)
+            self.canvas_recon.bind("<Button-4>", handle_wheel_recon)
+            self.canvas_recon.bind("<Button-5>", handle_wheel_recon)
+            self.scrollable_frame_recon.bind("<Button-4>", handle_wheel_recon)
+            self.scrollable_frame_recon.bind("<Button-5>", handle_wheel_recon)
 
         # Pack widgets into scrollable_frame_recon with anchor='center' for horizontal centering
         self.mode_label_recon = tk.Label(self.scrollable_frame_recon, text="Reconstruct Mode:", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
@@ -226,8 +258,8 @@ class BlockSaverApp:
         self.progress_recon.pack(pady=10, anchor='center')
         self.status_recon = tk.Label(self.scrollable_frame_recon, text="Ready to reconstruct!", font=('Helvetica', 14), fg='white', bg='#222222', wraplength=850)
         self.status_recon.pack(pady=10, anchor='center')
-# END BLOCK 6
-# START BLOCK 7
+# END BLOCK 7
+# START BLOCK 8
 
     def setup_placeholders(self):
         self.prefix_placeholder = "e.g., Library_Block_"
@@ -241,8 +273,8 @@ class BlockSaverApp:
         add_placeholder(self.start_number_recon, self.start_placeholder)
         add_placeholder(self.input_path_entry_recon, self.path_placeholder)
         add_placeholder(self.output_path_entry_recon, self.output_placeholder)
-# END BLOCK 7
-# START BLOCK 8
+# END BLOCK 8
+# START BLOCK 9
 
     def update_placeholders_color(self):
         placeholders = {
@@ -257,8 +289,8 @@ class BlockSaverApp:
         for entry, ph in placeholders.items():
             if entry.get() == ph:
                 entry.config(fg='grey')
-# END BLOCK 8
-# START BLOCK 9
+# END BLOCK 9
+# START BLOCK 10
     def split_blocks(self):
         pasted = self.paste_text.get("1.0", tk.END).strip()
         if not pasted:
@@ -380,8 +412,8 @@ class BlockSaverApp:
         self.input_path_entry_split.insert(0, self.path_placeholder)
         self.input_path_entry_split.config(fg='grey')
         self.paste_text.delete("1.0", tk.END)
-# END BLOCK 9
-# START BLOCK 10
+# END BLOCK 10
+# START BLOCK 11
     def reconstruct_blocks(self):
         mode = self.mode_var_recon.get()
         ext = '.json' if mode == 'JSON Code Segments' else '.js' if mode == 'JavaScript Code Segments' else '.txt'
@@ -446,8 +478,8 @@ class BlockSaverApp:
         self.output_path_entry_recon.delete(0, tk.END)
         self.output_path_entry_recon.insert(0, self.output_placeholder)
         self.output_path_entry_recon.config(fg='grey')
-# END BLOCK 10
-# START BLOCK 11
+# END BLOCK 11
+# START BLOCK 12
     def load_from_file(self):
         file_path = self.custom_askopenfilename(title="Select file to load", filetypes=[("Text files", "*.txt"), ("JS files", "*.js"), ("JSON files", "*.json"), ("All files", "*.*")])
         if file_path:
@@ -455,44 +487,44 @@ class BlockSaverApp:
                 content = f.read()
             self.paste_text.delete("1.0", tk.END)
             self.paste_text.insert(tk.END, content)
-# END BLOCK 11
-# START BLOCK 12
+# END BLOCK 12
+# START BLOCK 13
     def choose_output_dir_split(self):
         dir_path = self.custom_askopendirname(title="Select output directory")
         if dir_path:
             self.input_path_entry_split.delete(0, tk.END)
             self.input_path_entry_split.insert(0, dir_path)
             self.input_path_entry_split.config(fg='white')
-# END BLOCK 12
-# START BLOCK 13
+# END BLOCK 13
+# START BLOCK 14
     def choose_input_dir_recon(self):
         dir_path = self.custom_askopendirname(title="Select input directory")
         if dir_path:
             self.input_path_entry_recon.delete(0, tk.END)
             self.input_path_entry_recon.insert(0, dir_path)
             self.input_path_entry_recon.config(fg='white')
-# END BLOCK 13
-# START BLOCK 14
+# END BLOCK 14
+# START BLOCK 15
     def choose_output_file_recon(self):
         file_path = self.custom_asksaveasfilename(title="Select output file", defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("JS files", "*.js"), ("JSON files", "*.json"), ("All files", "*.*")])
         if file_path:
             self.output_path_entry_recon.delete(0, tk.END)
             self.output_path_entry_recon.insert(0, file_path)
             self.output_path_entry_recon.config(fg='white')
-# END BLOCK 14
-# START BLOCK 15
+# END BLOCK 15
+# START BLOCK 16
 
     def start_split_thread(self):
         thread = Thread(target=self.split_blocks)
         thread.start()
-# END BLOCK 15
-# START BLOCK 16
+# END BLOCK 16
+# START BLOCK 17
 
     def start_recon_thread(self):
         thread = Thread(target=self.reconstruct_blocks)
         thread.start()
-# END BLOCK 16
-# START BLOCK 16.5
+# END BLOCK 17
+# START BLOCK 18
     def custom_askopenfilename(self, **options):
         dia = CustomFileBrowser(self.root, mode="openfile", multiple_selection=False, **options)
         dia.geometry("900x600")  # Wider and taller to prevent text cutoff in columns
@@ -537,4 +569,4 @@ class BlockSaverApp:
         res = dia.get_result()
         self.root.focus_set()
         return res
-# END BLOCK 16.5
+# END BLOCK 18
