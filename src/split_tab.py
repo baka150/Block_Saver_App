@@ -4,7 +4,7 @@ import re
 import os
 import json  # Added for JSON mode (teaching: needed for json.loads/dumps in worker).
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit, QComboBox, QLineEdit, QProgressBar, QFrame, QScrollArea, QMessageBox
-from PyQt6.QtGui import QFont  # Added QFont (teaching: this is from QtGui for font styling, fixes the NameError since it's used in setFont)
+from PyQt6.QtGui import QFont, QTextOption  # Added QFont (teaching: this is from QtGui for font styling, fixes the NameError since it's used in setFont)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject
 from utils import add_placeholder, save_last_path
 
@@ -52,6 +52,9 @@ class SplitTab:
         self.paste_text = QTextEdit()
         self.paste_text.setFixedHeight(300)  # Height in pixels (adjust as needed)
         self.paste_text.setFixedWidth(700)
+        option = QTextOption()  # Teaching: Create option to set document-wide alignment.
+        option.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.paste_text.document().setDefaultTextOption(option)
         self.layout.addWidget(self.paste_text)
         # Mode label and combo
         self.mode_label_split = QLabel("Split Mode:")
@@ -129,6 +132,23 @@ class SplitTab:
 
 # END BLOCK 6
 # START BLOCK 7
+    def update_progress(self, value):
+        self.progress_split.setValue(value)
+
+# END BLOCK 7
+# START BLOCK 8
+
+    def update_status(self, message):
+        self.status_split.setText(message)
+
+# END BLOCK 8
+# START BLOCK 9
+
+    def show_error(self, message):
+        QMessageBox.warning(self.parent, "Error", message)
+
+# END BLOCK 9
+# START BLOCK 10
 
 
 class SplitWorker(QObject):
@@ -187,8 +207,9 @@ class SplitWorker(QObject):
 
         self.status.emit("Processing...")
         total = len(blocks)
-        for i, block in enumerate(blocks, start=start_num):
-            self.progress.emit(int((i / total) * 100))  # Teaching: Emit progress during loop.
+        for idx, block in enumerate(blocks):
+            i = start_num + idx  # Teaching: Calculate block number separately to avoid tying progress to naming.
+            self.progress.emit(int(((idx + 1) / total) * 100))  # Teaching: Use loop index (idx) for accurate progress from ~0% to 100%.
             file_name = f"{prefix}{i}{ext}"
             path = os.path.join(output_dir, file_name)
             with open(path, 'w', encoding='utf-8') as f:
@@ -196,23 +217,5 @@ class SplitWorker(QObject):
         save_last_path(output_dir)
         self.status.emit("Done!")
         self.finished.emit()
-
-# END BLOCK 7
-# START BLOCK 8
-
-    def update_progress(self, value):
-        self.progress_split.setValue(value)
-
-# END BLOCK 8
-# START BLOCK 9
-
-    def update_status(self, message):
-        self.status_split.setText(message)
-
-# END BLOCK 9
-# START BLOCK 10
-
-    def show_error(self, message):
-        QMessageBox.warning(self.parent, "Error", message)
 
 # END BLOCK 10

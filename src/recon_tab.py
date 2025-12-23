@@ -30,12 +30,15 @@ class ReconTab:
         # Placeholders
         self.path_placeholder = "Select or enter directory"
         self.output_placeholder = "Select or enter directory"
+        self.filename_placeholder = "e.g., reconstructed_library"  # Teaching: No ext needed; we'll append based on mode.
         # Setup widgets
         self.setup_widgets()
         # Add placeholders
         add_placeholder(self.input_path_entry_recon, self.path_placeholder)
         add_placeholder(self.output_path_entry_recon, self.output_placeholder)
+        add_placeholder(self.output_filename_recon, self.filename_placeholder)
 
+# END BLOCK 2
 # START BLOCK 3
 
     def setup_widgets(self):
@@ -65,6 +68,12 @@ class ReconTab:
         self.choose_output_recon = QPushButton("Choose Directory")
         self.choose_output_recon.clicked.connect(self.choose_output_dir_recon)
         self.layout.addWidget(self.choose_output_recon)
+        # Output filename (teaching: New field for custom name)
+        self.filename_label_recon = QLabel("Output filename (without extension):")
+        self.filename_label_recon.setFont(QFont('Helvetica', 14, QFont.Weight.Bold))
+        self.layout.addWidget(self.filename_label_recon)
+        self.output_filename_recon = QLineEdit()
+        self.layout.addWidget(self.output_filename_recon)
         # Process button
         self.process_button_recon = QPushButton("Reconstruct Blocks")
         self.process_button_recon.clicked.connect(self.start_recon_thread)
@@ -111,6 +120,24 @@ class ReconTab:
 # END BLOCK 6
 # START BLOCK 7
 
+    def update_progress(self, value):
+        self.progress_recon.setValue(value)
+
+# END BLOCK 7
+# START BLOCK 8
+
+    def update_status(self, message):
+        self.status_recon.setText(message)
+
+# END BLOCK 8
+# START BLOCK 9
+
+    def show_error(self, message):
+        QMessageBox.warning(self.parent, "Error", message)
+
+# END BLOCK 9
+# START BLOCK 10
+
 
 class ReconWorker(QObject):
     finished = pyqtSignal()
@@ -127,6 +154,7 @@ class ReconWorker(QObject):
         mode = self.tab.mode_menu_recon.currentText()
         input_dir = self.tab.input_path_entry_recon.text().strip()
         output_dir = self.tab.output_path_entry_recon.text().strip()
+        custom_name = self.tab.output_filename_recon.text().strip()  # Teaching: Grab custom filename.
         if mode == 'Raw Text Chunks':
             ext = '.txt'
             separator = '\n\n'
@@ -162,34 +190,26 @@ class ReconWorker(QObject):
                 block = re.sub(r'^// Block \d+ of \d+\n', '', block)
                 block = re.sub(r'^// Block \d+ of \d+ \(JSON\)\n', '', block)
                 content.append(block)
-            self.progress.emit(int((i / total) * 100))  # Teaching: Emit progress during loop.
+            self.progress.emit(int(((i + 1) / total) * 100))  # Teaching: Adjusted to reach 100% on last file.
 
         reconstructed = separator.join(content)
         if mode == 'JSON Code Segments':
             reconstructed = '[' + reconstructed + ']' if content else ''
-        output_file = os.path.join(output_dir, f'reconstructed_{mode.lower().replace(" ", "_")}{ext}')
+        # Teaching: Use custom name if provided, else default; append ext if missing.
+        if custom_name:
+            if not custom_name.endswith(ext):
+                custom_name += ext
+            output_file = os.path.join(output_dir, custom_name)
+        else:
+            output_file = os.path.join(output_dir, f'reconstructed_{mode.lower().replace(" ", "_")}{ext}')
+        if not output_file:  # Teaching: Extra check for empty name.
+            self.error.emit("Invalid output filename.")
+            self.finished.emit()
+            return
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(reconstructed)
         save_last_path(output_dir)
         self.status.emit("Done!")
         self.finished.emit()
-
-# END BLOCK 7
-# START BLOCK 8
-
-    def update_progress(self, value):
-        self.progress_recon.setValue(value)
-
-# END BLOCK 8
-# START BLOCK 9
-
-    def update_status(self, message):
-        self.status_recon.setText(message)
-
-# END BLOCK 9
-# START BLOCK 10
-
-    def show_error(self, message):
-        QMessageBox.warning(self.parent, "Error", message)
 
 # END BLOCK 10
