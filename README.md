@@ -1,6 +1,8 @@
 # Block Saver App
 
-A Tkinter-based Python app for splitting large text/code into blocks and reconstructing them. Supports raw text, JS, and JSON modes.
+A PyQt6 Python app for splitting large text/code into blocks and reconstructing them. Supports raw text, JS, and JSON modes.
+
+Planned additions: Auto detect file types, add more code types
 
 ## Installation
 1. Clone the repo: `git clone https://github.com/yourusername/block-saver-app.git`
