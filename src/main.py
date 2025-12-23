@@ -1,32 +1,10 @@
 # START BLOCK 1
-import tkinter as tk
+import sys
+from PyQt6.QtWidgets import QApplication
 from app import BlockSaverApp
-
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = BlockSaverApp(root)
-
-    # Force multiple updates
-    root.update_idletasks()
-    root.update()
-
-    # Get dimensions AFTER everything is drawn
-    width = 1000  # Hardcode the width we want
-    height = 800  # Hardcode the height we want
-
-    # Get screen dimensions
-    screen_width = root.winfo_screenwidth()
-    screen_height = root.winfo_screenheight()
-
-    # Calculate position
-    x = (screen_width - width) // 2
-    y = (screen_height - height) // 2
-
-    # Force the window to the center
-    root.geometry(f"{width}x{height}+{x}+{y}")
-
-    # Force another update
-    root.update_idletasks()
-
-    root.mainloop()
+    app = QApplication(sys.argv)  # Start Qt app (teaching: this handles events/loops, like tk.mainloop but for Qt)
+    window = BlockSaverApp()  # Create window without args (teaching: no root needed in Qt; it's standalone)
+    window.show()  # Show it (teaching: this makes it visible after setup, centering happens in init)
+    sys.exit(app.exec())  # Run loop and exit cleanly
 # END BLOCK 1

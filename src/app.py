@@ -1,131 +1,80 @@
 # START BLOCK 1
-# Imports: These bring in external libraries we need for the app.
+# Imports: These bring in external libraries we need for the app (teaching: PyQt6 replaces Tkinter; it's more powerful for layouts/themes)
 import os
 import sys
-import tkinter as tk
-from tkinter import messagebox, StringVar
-from tkinter.ttk import Progressbar, Combobox, Notebook
-import re
-import ttkthemes
 import json
-import glob
-from threading import Thread
-from utils import *  # Import helpers
-from tkfilebrowser.filebrowser import FileBrowser
-from split_tab import SplitTab
-from recon_tab import ReconTab
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit, QComboBox, QLineEdit, QProgressBar, QFileDialog, QMessageBox, QScrollArea, QFrame
+from PyQt6.QtGui import QLinearGradient, QPalette, QColor, QBrush, QFont
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from utils import load_last_path, save_last_path, add_placeholder  # Reuse helpers (teaching: we'll adapt add_placeholder for Qt)
+from split_tab import SplitTab  # Import SplitTab class (teaching: this fixes the NameError by bringing the class into scope)
+from recon_tab import ReconTab  # Import ReconTab class (teaching: proactive to avoid next error)
 # END BLOCK 1
 # START BLOCK 2
-# Custom File Browser: Subclass to widen the name column
-class CustomFileBrowser(FileBrowser):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.right_tree.column("#0", width=500)
+class BlockSaverApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Block Saver App")
+        self.resize(1000, 800)  # Initial size (teaching: Qt handles resizing; setMinimumSize if needed)
+        self.center()  # Center window (teaching: this method works reliably cross-platform, no glitches)
+        self.set_gradient_background()  # Gradient setup
+        self.apply_dark_theme()  # Dark colors
+
+        # Tabs (teaching: QTabWidget for notebook)
+        self.tabs = QTabWidget(self)
+        self.setCentralWidget(self.tabs)
+
+        # Split tab
+        self.split_tab = SplitTab(self.tabs, self)
+        self.tabs.addTab(self.split_tab.scrollable_frame, "Split Blocks")  # Use scrollable frame (teaching: we'll setup scrolling in tab classes)
+
+        # Recon tab
+        self.recon_tab = ReconTab(self.tabs, self)
+        self.tabs.addTab(self.recon_tab.scrollable_frame, "Reconstruct Blocks")
+
+        # Load paths (teaching: Qt has QLineEdit for entries; pass list of them)
+        load_last_path([self.split_tab.input_path_entry_split, self.recon_tab.input_path_entry_recon])
 # END BLOCK 2
 # START BLOCK 3
-# Main App Class
-class BlockSaverApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Block Saver App")
-        self.root.resizable(False, False)
-
-        # Set initial size
-        self.root.geometry("1000x800")
-
-        # Theme setup
-        self.theme = ttkthemes.ThemedStyle(root)
-        self.canvas = tk.Canvas(root, height=800, width=1000)
-        self.canvas.pack(fill="both", expand=True)
-
-        # Notebook for tabs
-        self.notebook = Notebook(root)
-        self.canvas.create_window(500, 400, window=self.notebook, height=700, width=950)
-
-        # Tab frames
-        self.split_frame = tk.Frame(self.notebook)
-        self.notebook.add(self.split_frame, text="Split Blocks")
-        self.recon_frame = tk.Frame(self.notebook)
-        self.notebook.add(self.recon_frame, text="Reconstruct Blocks")
-
-        # Setup tab classes
-        self.split_tab = SplitTab(self.split_frame, self)
-        self.recon_tab = ReconTab(self.recon_frame, self)
-
-        # Theme and gradient
-        self.set_theme('equilux')
-        self.set_gradient('#333333', '#111111')
-
-        # Load saved paths
-        load_last_path([self.split_tab.input_path_entry_split, self.recon_tab.input_path_entry_recon])
+    def center(self):
+        # Centering (teaching: frameGeometry includes borders; availableGeometry is screen minus taskbar—perfect for Linux)
+        frame = self.frameGeometry()
+        center_point = QApplication.primaryScreen().availableGeometry().center()
+        frame.moveCenter(center_point)
+        self.move(frame.topLeft())
 # END BLOCK 3
 # START BLOCK 4
-    # Set Theme
-    def set_theme(self, theme_name):
-        self.theme.theme_use(theme_name)
+    def set_gradient_background(self):
+        # Gradient (teaching: QLinearGradient on palette for window bg)
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0.0, QColor("#333333"))
+        gradient.setColorAt(1.0, QColor("#111111"))
+        palette = self.palette()
+        palette.setBrush(QPalette.ColorRole.Window, QBrush(gradient))
+        self.setPalette(palette)
 # END BLOCK 4
 # START BLOCK 5
-    # Set Gradient
-    def set_gradient(self, color1, color2):
-        steps = 10
-        for i in range(steps):
-            r1, g1, b1 = int(color1[1:3], 16), int(color1[3:5], 16), int(color1[5:7], 16)
-            r2, g2, b2 = int(color2[1:3], 16), int(color2[3:5], 16), int(color2[5:7], 16)
-            r = int(r1 + (i / steps) * (r2 - r1))
-            g = int(g1 + (i / steps) * (g2 - g1))
-            b = int(b1 + (i / steps) * (b2 - b1))
-            height_per_step = 800 // steps
-            self.canvas.create_rectangle(0, i * height_per_step, 1000, (i + 1) * height_per_step,
-                                       fill="#%02x%02x%02x" % (r, g, b), outline="")
+    def apply_dark_theme(self):
+        # Stylesheet for dark theme (teaching: Applies to all widgets; customize fonts/colors)
+        self.setStyleSheet("""
+            QWidget { background-color: #222222; color: white; font-family: Helvetica; }
+            QLineEdit { background-color: #2b2b2b; color: white; border: 1px solid #444444; }
+            QPushButton { background-color: darkblue; color: white; border: none; padding: 5px; }
+            QTextEdit { background-color: #2b2b2b; color: white; border: 1px solid #444444; }
+            QComboBox { background-color: #2b2b2b; color: white; border: 1px solid #444444; }
+            QProgressBar { background-color: #2b2b2b; color: white; border: 1px solid #444444; text-align: center; }
+            QLabel { color: white; }
+            QScrollArea { background-color: #222222; border: none; }
+        """)
 # END BLOCK 5
 # START BLOCK 6
-    # Custom Ask Open Filename
-    def custom_askopenfilename(self, **options):
-        dia = CustomFileBrowser(self.root, mode="openfile", multiple_selection=False, **options)
-        dia.geometry("900x600")
-        dia.update_idletasks()
-        w = 900
-        h = 600
-        x = self.root.winfo_x() + (self.root.winfo_width() // 2 - w // 2)
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2 - h // 2)
-        dia.geometry(f"{w}x{h}+{x}+{y}")
-        self.root.grab_set()
-        self.root.wait_window(dia)
-        res = dia.get_result()
-        self.root.focus_set()
-        return res
+    # Custom file dialogs (teaching: Qt has QFileDialog built-in, no need for tkfilebrowser—simpler!)
+    def custom_askopenfilename(self, title="Select file", filetypes=[("All files", "*.*")]):
+        return QFileDialog.getOpenFileName(self, title, "", ";;".join([f"{desc} ({pat})" for desc, pat in filetypes]))[0]
+
+    def custom_askopendirname(self, title="Select directory"):
+        return QFileDialog.getExistingDirectory(self, title)
+
+    def custom_asksaveasfilename(self, title="Save as", filetypes=[("All files", "*.*")]):
+        return QFileDialog.getSaveFileName(self, title, "", ";;".join([f"{desc} ({pat})" for desc, pat in filetypes]))[0]
 # END BLOCK 6
-# START BLOCK 7
-    # Custom Ask Open Dirname
-    def custom_askopendirname(self, **options):
-        dia = CustomFileBrowser(self.root, mode="opendir", multiple_selection=False, **options)
-        dia.geometry("900x600")
-        dia.update_idletasks()
-        w = 900
-        h = 600
-        x = self.root.winfo_x() + (self.root.winfo_width() // 2 - w // 2)
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2 - h // 2)
-        dia.geometry(f"{w}x{h}+{x}+{y}")
-        self.root.grab_set()
-        self.root.wait_window(dia)
-        res = dia.get_result()
-        self.root.focus_set()
-        return res
-# END BLOCK 7
-# START BLOCK 8
-    # Custom Ask Save As Filename
-    def custom_asksaveasfilename(self, **options):
-        dia = CustomFileBrowser(self.root, mode="savefile", multiple_selection=False, **options)
-        dia.geometry("900x600")
-        dia.update_idletasks()
-        w = 900
-        h = 600
-        x = self.root.winfo_x() + (self.root.winfo_width() // 2 - w // 2)
-        y = self.root.winfo_y() + (self.root.winfo_height() // 2 - h // 2)
-        dia.geometry(f"{w}x{h}+{x}+{y}")
-        self.root.grab_set()
-        self.root.wait_window(dia)
-        res = dia.get_result()
-        self.root.focus_set()
-        return res
-# END BLOCK 8
