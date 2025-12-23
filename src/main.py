@@ -7,4 +7,5 @@ if __name__ == "__main__":
     window = BlockSaverApp()  # Create window without args (teaching: no root needed in Qt; it's standalone)
     window.show()  # Show it (teaching: this makes it visible after setup, centering happens in init)
     sys.exit(app.exec())  # Run loop and exit cleanly
+
 # END BLOCK 1

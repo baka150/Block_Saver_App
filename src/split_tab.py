@@ -1,4 +1,4 @@
-#START BLOCK 1
+# START BLOCK 1
 # Imports specific to split tab (teaching: PyQt6 replaces tk; keep minimal, reuse from app)
 import re
 import os
@@ -7,8 +7,11 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit
 from PyQt6.QtGui import QFont  # Added QFont (teaching: this is from QtGui for font styling, fixes the NameError since it's used in setFont)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject
 from utils import add_placeholder, save_last_path
-#END BLOCK 1
-#START BLOCK 2
+
+# END BLOCK 1
+# START BLOCK 2
+
+
 class SplitTab:
     def __init__(self, parent, app):
         self.parent = parent
@@ -33,8 +36,10 @@ class SplitTab:
         add_placeholder(self.naming_prefix_split, self.prefix_placeholder)
         add_placeholder(self.start_number_split, self.start_placeholder)
         add_placeholder(self.input_path_entry_split, self.path_placeholder)
-#END BLOCK 2
-#START BLOCK 3
+
+# END BLOCK 2
+# START BLOCK 3
+
     def setup_widgets(self):
         # Paste label and browse
         self.paste_label = QLabel("Paste content here or load from file:")
@@ -87,22 +92,28 @@ class SplitTab:
         self.layout.addWidget(self.progress_split)
         self.status_split = QLabel("Ready")
         self.layout.addWidget(self.status_split)
-#END BLOCK 3
+
+# END BLOCK 3
 # START BLOCK 4
+
     def load_from_file(self):
         file_path = self.app.custom_askopenfilename(title="Select file to load", filetypes=[("Text files", "*.txt"), ("JS files", "*.js"), ("JSON files", "*.json"), ("All files", "*.*")])
         if file_path:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.paste_text.setPlainText(content)
+
 # END BLOCK 4
 # START BLOCK 5
+
     def choose_output_dir_split(self):
         dir_path = self.app.custom_askopendirname(title="Select output directory")
         if dir_path:
             self.input_path_entry_split.setText(dir_path)
+
 # END BLOCK 5
-#START BLOCK 6
+# START BLOCK 6
+
     def start_split_thread(self):
         self.thread = QThread()
         self.worker = SplitWorker(self)
@@ -115,16 +126,21 @@ class SplitTab:
         self.worker.status.connect(self.update_status)  # Teaching: Connect for messages like "Done!".
         self.worker.error.connect(self.show_error)  # Teaching: Connect for errors via QMessageBox.
         self.thread.start()
-#END BLOCK 6
-#START BLOCK 7
+
+# END BLOCK 6
+# START BLOCK 7
+
+
 class SplitWorker(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(int)  # Teaching: New signal for progress % (emitted during loop).
     status = pyqtSignal(str)  # Teaching: For status updates (e.g., "Processing...").
     error = pyqtSignal(str)  # Teaching: For error messages.
+
     def __init__(self, tab):
         super().__init__()
         self.tab = tab
+
     def run(self):
         # Ported split logic (teaching: runs in thread to avoid UI freeze; update UI via signals if needed)
         content = self.tab.paste_text.toPlainText().strip()
@@ -180,16 +196,23 @@ class SplitWorker(QObject):
         save_last_path(output_dir)
         self.status.emit("Done!")
         self.finished.emit()
-#END BLOCK 7
-#START BLOCK 8
+
+# END BLOCK 7
+# START BLOCK 8
+
     def update_progress(self, value):
         self.progress_split.setValue(value)
-#END BLOCK 8
-#START BLOCK 9
+
+# END BLOCK 8
+# START BLOCK 9
+
     def update_status(self, message):
         self.status_split.setText(message)
-#END BLOCK 9
-#START BLOCK 10
+
+# END BLOCK 9
+# START BLOCK 10
+
     def show_error(self, message):
         QMessageBox.warning(self.parent, "Error", message)
-#END BLOCK 10
+
+# END BLOCK 10
