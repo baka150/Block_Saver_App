@@ -1,6 +1,6 @@
 # START BLOCK 1
 # Imports specific to split tab (teaching: PyQt6 replaces tk; keep minimal, reuse from app)
-from shared_imports import json  # Teaching: Moved common imports to shared_imports.py; only keep what's uniquely needed here after move.
+from shared_imports import json, re  # Teaching: Moved common imports to shared_imports.py; only keep what's uniquely needed here after move.
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QTextEdit, QComboBox, QLineEdit, QProgressBar, QFrame, QScrollArea, QMessageBox
 from PyQt6.QtGui import QFont, QTextOption  # Added QFont (teaching: this is from QtGui for font styling, fixes the NameError since it's used in setFont)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject
@@ -36,6 +36,8 @@ class SplitTab:
         add_placeholder(self.naming_prefix_split, self.prefix_placeholder)
         add_placeholder(self.start_number_split, self.start_placeholder)
         add_placeholder(self.input_path_entry_split, self.path_placeholder)
+        # Teaching: Connect signal for auto-detect on paste/content change.
+        self.paste_text.document().contentsChanged.connect(self.auto_detect_from_content)
 
 # END BLOCK 2
 # START BLOCK 3
@@ -105,8 +107,8 @@ class SplitTab:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             self.paste_text.setPlainText(content)
-            # Teaching: Auto-detect mode using shared function.
-            mode = detect_mode_from_file(file_path)
+            # Teaching: Auto-detect mode using shared function, with callback for status.
+            mode = detect_mode_from_file(file_path, lambda msg: self.status_split.setText(msg))
             self.mode_menu_split.setCurrentText(mode)
 
 # END BLOCK 4
@@ -151,3 +153,24 @@ class SplitTab:
         QMessageBox.warning(self.parent, "Error", message)
 
 # END BLOCK 9
+# START BLOCK 10
+
+    def auto_detect_from_content(self):
+        content = self.paste_text.toPlainText().strip()
+        if not content:
+            return
+        try:
+            json.loads(content)
+            mode = 'JSON Code Segments'
+            msg = "Auto-detected mode: " + mode + " (JSON parsed successfully)"
+        except json.JSONDecodeError:
+            if re.search(r'\b(function|class|var|let|const|export|import)\b', content):
+                mode = 'JavaScript Code Segments'
+                msg = "Auto-detected mode: " + mode + " (JS keywords detected)"
+            else:
+                mode = 'Raw Text Chunks'
+                msg = "Auto-detected mode: " + mode + " (default text)"
+        self.mode_menu_split.setCurrentText(mode)
+        self.status_split.setText(msg)
+
+# END BLOCK 10

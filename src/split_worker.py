@@ -62,8 +62,15 @@ class SplitWorker(QObject):
         for idx, block in enumerate(blocks):
             i = start_num + idx  # Teaching: Calculate block number separately to avoid tying progress to naming.
             self.progress.emit(int(((idx + 1) / total) * 100))  # Teaching: Use loop index (idx) for accurate progress from ~0% to 100%.
-            file_name = f"{prefix}{i}{ext}"
+            base_name = f"{prefix}{i}"
+            file_name = f"{base_name}{ext}"
             path = os.path.join(output_dir, file_name)
+            # Teaching: Check if file exists; if so, append _copyN until unique to avoid overwriting.
+            copy_num = 1
+            while os.path.exists(path):
+                file_name = f"{base_name}_copy{copy_num}{ext}"
+                path = os.path.join(output_dir, file_name)
+                copy_num += 1
             with open(path, 'w', encoding='utf-8') as f:
                 f.write(wrapper_start.format(i, total) + block + wrapper_end)
         save_last_path(output_dir)

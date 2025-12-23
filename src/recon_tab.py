@@ -1,6 +1,6 @@
 # START BLOCK 1
 # Imports specific to recon tab (teaching: similar to split_tab, PyQt6 for widgets)
-from shared_imports import json  # Teaching: Moved common imports to shared_imports.py; only keep what's uniquely needed here after move.
+from shared_imports import json, os  # Teaching: Moved common imports to shared_imports.py; only keep what's uniquely needed here after move.
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QComboBox, QLineEdit, QProgressBar, QFrame, QScrollArea, QMessageBox
 from PyQt6.QtGui import QFont  # Added QFont (teaching: from QtGui, matches split_tab for consistency).
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QObject
@@ -36,6 +36,8 @@ class ReconTab:
         add_placeholder(self.input_path_entry_recon, self.path_placeholder)
         add_placeholder(self.output_path_entry_recon, self.output_placeholder)
         add_placeholder(self.output_filename_recon, self.filename_placeholder)
+        # Teaching: Connect signal for auto-detect on manual path change/typing.
+        self.input_path_entry_recon.textChanged.connect(self.auto_detect_mode)
 
 # END BLOCK 2
 # START BLOCK 3
@@ -138,3 +140,12 @@ class ReconTab:
         QMessageBox.warning(self.parent, "Error", message)
 
 # END BLOCK 9
+# START BLOCK 10
+
+    def auto_detect_mode(self):
+        dir_path = self.input_path_entry_recon.text().strip()
+        if dir_path and os.path.isdir(dir_path):
+            mode = detect_mode_from_dir(dir_path, lambda msg: self.status_recon.setText(msg))
+            self.mode_menu_recon.setCurrentText(mode)
+
+# END BLOCK 10
