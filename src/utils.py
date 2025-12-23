@@ -27,23 +27,7 @@ def save_last_path(path):
 # END BLOCK 3
 #START BLOCK 4
 def add_placeholder(entry, placeholder):
-    # Teaching: PyQt6 has built-in setPlaceholderText()—simpler and native! We style it grey.
+    # Teaching: Simplified—PyQt6 handles placeholder natively with stylesheet for color (moved to app.py for global apply).
+    # No event overrides needed; placeholder shows grey when empty, text is white when typed.
     entry.setPlaceholderText(placeholder)
-    entry.setStyleSheet("color: white;")  # Default text white.
-
-    # Override focus events (teaching: PyQt6 uses event overrides; subclass if needed, but lambda works for simple).
-    def focus_in(event):
-        if entry.text() == "":
-            entry.setStyleSheet("color: white;")  # Ensure text is white when typing.
-
-    def focus_out(event):
-        if entry.text() == "":
-            entry.setStyleSheet("color: grey;")  # Placeholder is already grey via stylesheet.
-
-    entry.focusInEvent = lambda event: focus_in(event) if entry.text() == placeholder else entry.focusInEvent(event)
-    entry.focusOutEvent = lambda event: focus_out(event) if entry.text() == "" else entry.focusOutEvent(event)
-
-    # Initial setup
-    if entry.text() == "":
-        entry.setStyleSheet("color: grey;")
 #END BLOCK 4

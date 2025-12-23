@@ -9,8 +9,11 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from utils import load_last_path, save_last_path, add_placeholder  # Reuse helpers (teaching: we'll adapt add_placeholder for Qt)
 from split_tab import SplitTab  # Import SplitTab class (teaching: this fixes the NameError by bringing the class into scope)
 from recon_tab import ReconTab  # Import ReconTab class (teaching: proactive to avoid next error)
+
 # END BLOCK 1
 # START BLOCK 2
+
+
 class BlockSaverApp(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -34,16 +37,20 @@ class BlockSaverApp(QMainWindow):
 
         # Load paths (teaching: Qt has QLineEdit for entries; pass list of them)
         load_last_path([self.split_tab.input_path_entry_split, self.recon_tab.input_path_entry_recon])
+
 # END BLOCK 2
 # START BLOCK 3
+
     def center(self):
         # Centering (teaching: frameGeometry includes borders; availableGeometry is screen minus taskbar—perfect for Linux)
         frame = self.frameGeometry()
         center_point = QApplication.primaryScreen().availableGeometry().center()
         frame.moveCenter(center_point)
         self.move(frame.topLeft())
+
 # END BLOCK 3
 # START BLOCK 4
+
     def set_gradient_background(self):
         # Gradient (teaching: QLinearGradient on palette for window bg)
         gradient = QLinearGradient(0, 0, 0, self.height())
@@ -52,13 +59,16 @@ class BlockSaverApp(QMainWindow):
         palette = self.palette()
         palette.setBrush(QPalette.ColorRole.Window, QBrush(gradient))
         self.setPalette(palette)
+
 # END BLOCK 4
 # START BLOCK 5
+
     def apply_dark_theme(self):
         # Stylesheet for dark theme (teaching: Applies to all widgets; customize fonts/colors)
         self.setStyleSheet("""
             QWidget { background-color: #222222; color: white; font-family: Helvetica; }
             QLineEdit { background-color: #2b2b2b; color: white; border: 1px solid #444444; }
+            QLineEdit::placeholder { color: grey; }  # Added for placeholder color (teaching: fixes need for event hacks).
             QPushButton { background-color: darkblue; color: white; border: none; padding: 5px; }
             QTextEdit { background-color: #2b2b2b; color: white; border: 1px solid #444444; }
             QComboBox { background-color: #2b2b2b; color: white; border: 1px solid #444444; }
@@ -66,9 +76,11 @@ class BlockSaverApp(QMainWindow):
             QLabel { color: white; }
             QScrollArea { background-color: #222222; border: none; }
         """)
+
 # END BLOCK 5
 # START BLOCK 6
     # Custom file dialogs (teaching: Qt has QFileDialog built-in, no need for tkfilebrowser—simpler!)
+
     def custom_askopenfilename(self, title="Select file", filetypes=[("All files", "*.*")]):
         return QFileDialog.getOpenFileName(self, title, "", ";;".join([f"{desc} ({pat})" for desc, pat in filetypes]))[0]
 
@@ -77,4 +89,5 @@ class BlockSaverApp(QMainWindow):
 
     def custom_asksaveasfilename(self, title="Save as", filetypes=[("All files", "*.*")]):
         return QFileDialog.getSaveFileName(self, title, "", ";;".join([f"{desc} ({pat})" for desc, pat in filetypes]))[0]
+
 # END BLOCK 6
