@@ -33,16 +33,15 @@ class BlockSaverApp:
     def __init__(self, root):
         self.root = root  # Store the main Tkinter window reference
         self.root.title("Block Saver App")  # Set window title
-        self.root.geometry("900x800")  # Set fixed size
         self.root.resizable(False, False)  # Prevent resizing
         # Theme setup: Using ttkthemes for a consistent look
         self.theme = ttkthemes.ThemedStyle(root)
         # Gradient background: Canvas for drawing the background
-        self.canvas = tk.Canvas(root, height=800, width=900)
+        self.canvas = tk.Canvas(root, height=800, width=1000)
         self.canvas.pack(fill="both", expand=True)  # Fill the window
         # Notebook: For tabs (Split and Reconstruct)
         self.notebook = Notebook(root)
-        self.canvas.create_window(450, 400, window=self.notebook, height=700, width=850)
+        self.canvas.create_window(500, 400, window=self.notebook, height=700, width=950)
 # END BLOCK 3
 # START BLOCK 4
         # Tab frames: Containers for each tab's content
@@ -63,17 +62,6 @@ class BlockSaverApp:
         # Moved tab-specific configs to their classes; only shared here if needed
         load_last_path([self.split_tab.input_path_entry_split, self.recon_tab.input_path_entry_recon])  # Load saved paths, now referencing tab instances
 # END BLOCK 5
-# START BLOCK 6
-        # Center window: Position on screen for better UX
-        # Tip: update_idletasks() ensures sizes are calculated before positioning
-        self.root.update_idletasks()  # Ensures geometry is updated
-        self.root.update()  # Extra update for better positioning on some systems like Linux
-        width = 900
-        height = 800
-        x = (self.root.winfo_screenwidth() - width) // 2
-        y = (self.root.winfo_screenheight() - height) // 2
-        self.root.geometry(f"{width}x{height}+{x}+{y}")
-# END BLOCK 6
 # START BLOCK 7
     # Set Theme: Simple method to apply the theme
     def set_theme(self, theme_name):
@@ -94,7 +82,7 @@ class BlockSaverApp:
             b = int(b1 + (i / steps) * (b2 - b1))
             height_per_step = 800 // steps
             # Draw rectangle for each step
-            self.canvas.create_rectangle(0, i * height_per_step, 900, (i + 1) * height_per_step, fill="#%02x%02x%02x" % (r, g, b), outline="")
+            self.canvas.create_rectangle(0, i * height_per_step, 1000, (i + 1) * height_per_step, fill="#%02x%02x%02x" % (r, g, b), outline="")
 # END BLOCK 8
 # START BLOCK 9
     # Custom Ask Open Filename: Customized file dialog

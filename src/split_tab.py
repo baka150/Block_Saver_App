@@ -33,6 +33,7 @@ class SplitTab:
             self.input_path_entry_split.config(fg='grey')
 # END BLOCK 2
 # START BLOCK 3
+
     def setup_widgets(self):
         # Scrollable canvas: To handle content overflow
         self.canvas_split = tk.Canvas(self.frame, bg='#222222')
@@ -48,36 +49,35 @@ class SplitTab:
         # Create window in canvas for the frame
         self.canvas_split.create_window((0, 0), window=self.scrollable_frame_split, anchor="nw")
         self.canvas_split.configure(yscrollcommand=scrollbar.set)
-        # Pack scrollbar and add padding for balance
-        scrollbar.pack(side="right", fill="y")
-        self.frame.update_idletasks()  # Force update to get sizes
-        padding_width = scrollbar.winfo_width()  # Get scrollbar width
-        if padding_width < 10:  # Fallback for rendering issues
-            padding_width = 20  # Common scrollbar width
-        print(f"Split tab scrollbar width: {padding_width}")  # Debug output
-        padding_frame = tk.Frame(self.frame, width=padding_width, bg='#222222')
-        padding_frame.pack(side="left", fill="y")
+        # Pack scrollbar (no padding_frame—teaching: removes visual shift for better centering)
         self.canvas_split.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 # END BLOCK 3
 # START BLOCK 4
         # Mouse wheel bindings: For cross-platform scrolling
         # Tip: Different OS handle wheel events differently; this covers Windows/Mac/Linux
-        def handle_wheel_split(event):
-            print("Wheel event on split tab!")  # Debug
-            direction = -1 if event.num == 4 or event.delta > 0 else 1
-            self.canvas_split.yview_scroll(direction, "units")
+        def on_mousewheel(event):
+            # print("Wheel event on split tab!")  # Debug (commented for production)
+            if sys.platform == "linux":
+                delta = -1 if event.num == 4 else 1
+                self.canvas_split.yview_scroll(delta, "units")
+            else:
+                self.canvas_split.yview_scroll(int(-1 * (event.delta / 120)), "units")
             return "break"  # Stop propagation
-        if sys.platform == "win32" or sys.platform == "darwin":
-            self.app.root.bind_all("<MouseWheel>", lambda event: self.canvas_split.yview_scroll(int(-1 * (event.delta / 120)), "units"))
-            self.canvas_split.bind("<MouseWheel>", lambda event: self.canvas_split.yview_scroll(int(-1 * (event.delta / 120)), "units"))
-            self.scrollable_frame_split.bind("<MouseWheel>", lambda event: self.canvas_split.yview_scroll(int(-1 * (event.delta / 120)), "units"))
-        else:  # Linux
-            self.app.root.bind_all("<Button-4>", handle_wheel_split)
-            self.app.root.bind_all("<Button-5>", handle_wheel_split)
-            self.canvas_split.bind("<Button-4>", handle_wheel_split)
-            self.canvas_split.bind("<Button-5>", handle_wheel_split)
-            self.scrollable_frame_split.bind("<Button-4>", handle_wheel_split)
-            self.scrollable_frame_split.bind("<Button-5>", handle_wheel_split)
+
+        # Recursive bind to all children for full coverage
+        def bind_recursive(widget):
+            if sys.platform == "win32" or sys.platform == "darwin":
+                widget.bind("<MouseWheel>", on_mousewheel)
+            else:  # Linux
+                widget.bind("<Button-4>", on_mousewheel)
+                widget.bind("<Button-5>", on_mousewheel)
+            for child in widget.winfo_children():
+                bind_recursive(child)
+
+        # Bind to canvas and recursively to scrollable frame (after widgets setup, but here for sequence)
+        bind_recursive(self.canvas_split)
+        bind_recursive(self.scrollable_frame_split)
 # END BLOCK 4
 # START BLOCK 5
         # Widgets: Add labels, buttons, text areas, etc., centered
@@ -86,8 +86,14 @@ class SplitTab:
         self.paste_label.pack(pady=5, anchor='center')
         self.browse_button_split = tk.Button(self.scrollable_frame_split, text="Browse File", command=self.load_from_file, font=('Helvetica', 12), bg='darkblue', fg='white')
         self.browse_button_split.pack(pady=10, anchor='center')
-        self.paste_text = tk.Text(self.scrollable_frame_split, height=18, width=90, font=('Courier', 10), bg='#2b2b2b', fg='white')
-        self.paste_text.pack(pady=10, anchor='center')
+        # Frame for text widget with scrollbar (teaching note: this isolates the text and scrollbar for independent scrolling)
+        self.text_frame = tk.Frame(self.scrollable_frame_split, bg='#222222')
+        self.text_frame.pack(pady=10, anchor='center')
+        self.paste_text = tk.Text(self.text_frame, height=18, width=80, font=('Courier', 10), bg='#2b2b2b', fg='white')  # Reduced width for better fit
+        self.paste_text.pack(side="left", fill="x", expand=True)
+        self.text_scroll = tk.Scrollbar(self.text_frame, orient="vertical", command=self.paste_text.yview)
+        self.text_scroll.pack(side="right", fill="y")
+        self.paste_text.config(yscrollcommand=self.text_scroll.set)
         self.mode_label_split = tk.Label(self.scrollable_frame_split, text="Split Mode:", font=('Helvetica', 14, 'bold'), fg='white', bg='#222222')
         self.mode_label_split.pack(pady=5, anchor='center')
         self.mode_var_split = tk.StringVar(value='Raw Text Chunks')
@@ -113,7 +119,7 @@ class SplitTab:
         self.choose_input_split.pack(pady=10, anchor='center')
         self.process_button_split = tk.Button(self.scrollable_frame_split, text="Split & Save Blocks", command=self.start_split_thread, font=('Helvetica', 14, 'bold'), bg='darkgreen', fg='white')
         self.process_button_split.pack(pady=10, anchor='center')
-        self.progress_split = Progressbar(self.scrollable_frame_split, length=700, mode='determinate')
+        self.progress_split = Progressbar(self.scrollable_frame_split, length=800, mode='determinate')  # Increased length to match wider window
         self.progress_split.pack(pady=10, anchor='center')
         self.status_split = tk.Label(self.scrollable_frame_split, text="Ready for paste!", font=('Helvetica', 14), fg='white', bg='#222222', wraplength=850)
         self.status_split.pack(pady=10, anchor='center')
